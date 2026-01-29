@@ -3,7 +3,7 @@ import { SnakeGame } from './snake-game';
 import { type LevelResult } from '../utils/game-progress';
 
 interface GamePageProps {
-  level: 1 | 2 | 3 | 4 | 5;
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   onComplete: (result: LevelResult) => void;
   onQuit: () => void;
 }

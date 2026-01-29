@@ -100,7 +100,7 @@ class SoundManager {
     oscillator.stop(now + 0.05);
   }
 
-  startBackgroundMusic(level: 1 | 2 | 3 | 4 | 5) {
+  startBackgroundMusic(level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) {
     this.stopBackgroundMusic();
     // Background music disabled as requested
   }

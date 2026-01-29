@@ -5,7 +5,7 @@ import { MiniMap } from './mini-map';
 import { soundManager } from './sound-manager';
 
 interface Level {
-  number: 1 | 2 | 3 | 4 | 5;
+  number: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   name: string;
   quote: string;
   mechanic: 'normal' | 'moving_words' | 'accumulation' | 'opposing' | 'legacy';
@@ -27,6 +27,9 @@ interface Level {
   hasZones?: boolean;
   isCircular?: boolean;
   disableWrap?: boolean;
+  hasPatrolObstacles?: boolean;
+  hasFogOfWar?: boolean;
+  hasDecoys?: boolean;
 }
 
 
@@ -118,6 +121,61 @@ const LEVELS: Level[] = [
     },
     sentence: ['Cái mới', 'ra đời', 'trên cơ sở', 'kế thừa', 'cái cũ'],
     wrongWords: ['Cái cũ', 'biến mất', 'không liên quan', 'từ bỏ', 'hoàn toàn mới', 'phủ nhận']
+  },
+  {
+    number: 6,
+    name: 'Thực Tiễn',
+    quote: 'Thực tiễn là tiêu chuẩn của chân lý.',
+    mechanic: 'normal',
+    hasFogOfWar: true,
+    colors: {
+      primary: '#4b0082', // Indigo/Deep Purple
+      secondary: '#E6E6FA', // Lavender
+      background: '#eebbfa',
+      text: '#3a0063',
+      gradient: ['#4b0082', '#8A2BE2'],
+      primaryRgba: 'rgba(75, 0, 130, 1)'
+    },
+    sentence: ['Thực tiễn', 'là', 'tiêu chuẩn', 'của', 'chân lý'],
+    wrongWords: ['Lý thuyết', 'ảo tưởng', 'suy đoán', 'lời nói', 'giả thuyết']
+  },
+  {
+    number: 7,
+    name: 'Bản Chất',
+    quote: 'Bản chất quyết định hiện tượng.',
+    mechanic: 'normal',
+    hasDecoys: true,
+    colors: {
+      primary: '#00ced1', // Dark Turquoise
+      secondary: '#40e0d0', // Turquoise
+      background: '#e0ffff',
+      text: '#008b8b',
+      gradient: ['#00ced1', '#20b2aa'],
+      primaryRgba: 'rgba(0, 206, 209, 1)'
+    },
+    sentence: ['Bản chất', 'quyết định', 'hiện tượng'],
+    wrongWords: ['Hiện tượng', 'bề ngoài', 'ngẫu nhiên', 'thay thế', 'che giấu']
+  },
+  {
+    number: 8,
+    name: 'Tự Do',
+    quote: 'Tự do là sự nhận thức được cái tất yếu.',
+    mechanic: 'normal',
+    disableWrap: false, // ENABLE WRAP for this level. 
+    // Wait, by default disableWrap is undefined, which usually means "wrap" is disabled (die on wall) in standard snake?
+    // Let's check logic: "if (wallCollisionEnabled) ... error".
+    // I need to check where `wallCollisionEnabled` is set or used.
+    hasPatrolObstacles: true,
+    colors: {
+      primary: '#ffd700', // Gold
+      secondary: '#daa520', // Goldenrod
+      background: '#fff8dc', // Cornsilk
+      text: '#b8860b', // Dark Goldenrod
+      gradient: ['#ffd700', '#ffa500'],
+      primaryRgba: 'rgba(255, 215, 0, 1)'
+    },
+    sentence: ['Tự do', 'là', 'nhận thức', 'cái', 'tất yếu'],
+    wrongWords: ['Tùy tiện', 'ngẫu hứng', 'bất chấp', 'vô kỉ luật', 'may rủi', 'bắt buộc']
   }
 ];
 
@@ -136,7 +194,7 @@ export interface ConceptOrb {
 }
 
 interface SnakeGameProps {
-  level: 1 | 2 | 3 | 4 | 5;
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   onLevelComplete: (result: {
     sentence: string;
     elapsedTime: number;
@@ -155,6 +213,10 @@ const getGameSpeed = (level: number, zone?: 'red' | 'blue') => {
   // Level 4: Speed varies by zone
   if (level === 4 && zone) {
     return zone === 'red' ? baseSpeed * 0.8 : baseSpeed * 1.2;
+  }
+  // Level 8: Faster speed for challenge
+  if (level === 8) {
+    return 100;
   }
 
   return baseSpeed;
@@ -180,6 +242,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   const [lastMoveTime, setLastMoveTime] = useState(0);
 
   // New state for advanced mechanics
+  const [obstacles, setObstacles] = useState<Position[]>([]); // Level 8 patrol obstacles
   const [accumulationOrbs, setAccumulationOrbs] = useState(0);
   const [chasingOrbs, setChasingOrbs] = useState<ConceptOrb[]>([]);
   const [currentZone, setCurrentZone] = useState<'red' | 'blue'>('red');
@@ -236,7 +299,21 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
     });
 
     // Add wrong words (varying by level)
-    const numWrong = level === 1 ? 2 : level === 2 ? 3 : level === 3 ? 3 : level === 4 ? 4 : 5;
+    const numWrong = level === 1 ? 2 : level === 2 ? 3 : level === 3 ? 3 : level === 4 ? 4 : level >= 5 ? 5 : 5;
+
+    // Level 7: Decoy system - Add fake copies of the CORRECT word
+    if (level === 7 && levelData.hasDecoys) {
+      for (let i = 0; i < 3; i++) {
+        newOrbs.push({
+          id: `decoy-${i}`,
+          word: nextWord, // SAME as correct word!
+          position: getRandomPosition(snake, newOrbs),
+          isCorrect: false, // But technically WRONG
+          shape: ['circle', 'square', 'triangle'][Math.floor(Math.random() * 3)] as any
+        });
+      }
+    }
+
     for (let i = 0; i < numWrong; i++) {
       const wrongWord = levelData.wrongWords[Math.floor(Math.random() * levelData.wrongWords.length)];
       newOrbs.push({
@@ -345,6 +422,51 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
     return () => clearInterval(interval);
   }, [level, chasingOrbs.length, snake]);
+
+  // Level 8: Initialize Patrol Obstacles
+  useEffect(() => {
+    if (level === 8 && levelData.hasPatrolObstacles) {
+      const newObstacles: Position[] = [
+        { x: 5, y: 5 }, { x: 15, y: 5 },
+        { x: 5, y: 15 }, { x: 15, y: 15 },
+        { x: 10, y: 10 }
+      ];
+      setObstacles(newObstacles);
+    } else {
+      setObstacles([]);
+    }
+  }, [level]);
+
+  // Level 8: Move Patrol Obstacles
+  useEffect(() => {
+    if (level !== 8 || obstacles.length === 0) return;
+
+    const interval = setInterval(() => {
+      setObstacles(prev => prev.map((obs, idx) => {
+        // Simple patrol pattern
+        let newX = obs.x;
+        let newY = obs.y;
+
+        // Pattern: Move in a small square or line based on index
+        const time = Date.now() / 1000;
+        if (idx % 2 === 0) {
+          // Horizontal patrol
+          newX = obs.x + (Math.sin(time) > 0 ? 1 : -1);
+        } else {
+          // Vertical patrol
+          newY = obs.y + (Math.cos(time) > 0 ? 1 : -1);
+        }
+
+        // Keep within bounds
+        return {
+          x: Math.max(0, Math.min(GRID_SIZE - 1, newX)),
+          y: Math.max(0, Math.min(GRID_SIZE - 1, newY))
+        };
+      }));
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [level, obstacles.length]);
 
   // Timer system - count elapsed time continuously during gameplay
   useEffect(() => {
@@ -478,6 +600,20 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         if (level === 5 && legacyObstacles.some(obstacle => obstacle.x === newHead.x && obstacle.y === newHead.y)) {
           setGameState('error');
           setErrorMessage('Đụng vật cản!');
+          if (soundEnabled) {
+            soundManager.playWrongSound();
+          }
+          setTimeout(() => {
+            setGameState('playing');
+            setErrorMessage('');
+          }, 1000);
+          return prevSnake;
+        }
+
+        // Level 8: Patrol Obstacles collision
+        if (level === 8 && obstacles.some(obs => obs.x === newHead.x && obs.y === newHead.y)) {
+          setGameState('error');
+          setErrorMessage('Đụng chướng ngại (Tất yếu)!');
           if (soundEnabled) {
             soundManager.playWrongSound();
           }
@@ -1019,6 +1155,32 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           </div>
         )}
 
+        {/* Patrol Obstacles (Level 8) */}
+        {level === 8 && obstacles.map((obstacle, index) => (
+          <motion.div
+            key={`obstacle-${index}`}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            style={{
+              position: 'absolute',
+              left: `${obstacle.x * CELL_SIZE}px`,
+              top: `${obstacle.y * CELL_SIZE}px`,
+              width: `${CELL_SIZE}px`,
+              height: `${CELL_SIZE}px`,
+              backgroundColor: '#b8860b',
+              borderRadius: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '10px',
+              boxShadow: '0 0 10px rgba(184, 134, 11, 0.6)'
+            }}
+          >
+            ⚡
+          </motion.div>
+        ))}
 
         {/* Mini-map */}
         <div className="absolute top-24 right-4 z-20">

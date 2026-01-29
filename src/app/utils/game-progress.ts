@@ -55,6 +55,36 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
             "Cái mới kế thừa tinh hoa của cái cũ",
             "Phủ định của phủ định đưa lên trình độ cao hơn"
         ]
+    },
+    6: {
+        title: "Thực Tiễn Và Chân Lý",
+        content: "Thực tiễn là toàn bộ hoạt động vật chất - cảm tính có mục đích, mang tính lịch sử - xã hội của con người nhằm cải biến tự nhiên và xã hội. Thực tiễn là cơ sở, động lực, mục đích của nhận thức và là tiêu chuẩn của chân lý. Chỉ có đem những tri thức thu nhận được kiểm nghiệm qua thực tiễn mới xác định được tính đúng đắn của chúng.",
+        keyPoints: [
+            "Thực tiễn là tiêu chuẩn duy nhất của chân lý",
+            "Học đi đôi với hành, lý luận gắn liền với thực tiễn",
+            "Thực tiễn vận động và phát triển không ngừng",
+            "Tránh bệnh giáo điều, xa rời thực tiễn"
+        ]
+    },
+    7: {
+        title: "Bản Chất Và Hiện Tượng",
+        content: "Bản chất là tổng hợp tất cả những mặt, những mối liên hệ tất nhiên tương đối ổn định bên trong sự vật. Hiện tượng là sự biểu hiện ra bên ngoài của bản chất. Bản chất bao giờ cũng bộc lộ qua hiện tượng, còn hiện tượng bao giờ cũng là sự biểu hiện của một bản chất nhất định. Tuy nhiên, hiện tượng không phải bao giờ cũng phản ánh đúng bản chất (có thể là hiện tượng giả).",
+        keyPoints: [
+            "Bản chất quyết định hiện tượng",
+            "Hiện tượng là biểu hiện của bản chất",
+            "Đừng đánh giá sự vật chỉ qua vẻ bề ngoài",
+            "Phải tìm hiểu bản chất sâu xa bên trong"
+        ]
+    },
+    8: {
+        title: "Tất Yếu Và Tự Do",
+        content: "Tất yếu là cái chi phối sự vật buộc sự vật phải phát triển thế này hay thế khác. Tự do là khả năng con người làm chủ được bản thân và thế giới xung quanh trên cơ sở nhận thức được cái tất yếu. Tự do không phải là muốn làm gì thì làm, mà là hành động dựa trên sự hiểu biết về quy luật.",
+        keyPoints: [
+            "Tự do là sự nhận thức được cái tất yếu",
+            "Tự do gắn liền với trách nhiệm",
+            "Hành động trái quy luật sẽ bị trừng phạt",
+            "Hiểu quy luật giúp con người chủ động (tự do)"
+        ]
     }
 };
 
@@ -109,7 +139,8 @@ export function saveProgress(progress: GameProgress): void {
 
 export function unlockNextLevel(currentProgress: GameProgress, completedLevel: number): GameProgress {
     const nextLevel = completedLevel + 1;
-    if (nextLevel <= 5 && !currentProgress.unlockedLevels.includes(nextLevel)) {
+    // Updated to support up to 8 levels
+    if (nextLevel <= 8 && !currentProgress.unlockedLevels.includes(nextLevel)) {
         return {
             ...currentProgress,
             unlockedLevels: [...currentProgress.unlockedLevels, nextLevel].sort((a, b) => a - b)

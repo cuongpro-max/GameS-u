@@ -49,6 +49,30 @@ const LEVELS_INFO = [
         color: '#9b59b6',
         bg: '#f4ecf7',
         text: '#5b2c6f'
+    },
+    {
+        number: 6,
+        name: 'Thực Tiễn',
+        quote: 'Thực tiễn là tiêu chuẩn của chân lý.',
+        color: '#4b0082', // Indigo/Deep Purple
+        bg: '#eebbfa',
+        text: '#3a0063'
+    },
+    {
+        number: 7,
+        name: 'Bản Chất',
+        quote: 'Bản chất quyết định hiện tượng.',
+        color: '#00ced1', // Dark Turquoise
+        bg: '#e0ffff',
+        text: '#008b8b'
+    },
+    {
+        number: 8,
+        name: 'Tự Do',
+        quote: 'Tự do là sự nhận thức được cái tất yếu.',
+        color: '#ffd700', // Gold
+        bg: '#fff8dc',
+        text: '#b8860b'
     }
 ];
 

@@ -3,13 +3,13 @@ import { CheckCircle, Clock, Trophy, RotateCcw, ArrowRight, Menu } from 'lucide-
 import { LEVEL_LESSONS, formatTime } from '../utils/game-progress';
 
 interface LevelSummaryProps {
-    level: 1 | 2 | 3 | 4 | 5;
+    level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
     completedSentence: string;
     elapsedTime: number;
     penaltyTime: number;
     isNewRecord: boolean;
     onReplay: () => void;
-    onNextLevel?: () => void;  // undefined if level 5
+    onNextLevel?: () => void;  // undefined if level 5 (now 8)
     onBackToMenu: () => void;
 }
 
@@ -18,7 +18,10 @@ const LEVEL_COLORS = {
     2: { primary: '#4a90e2', bg: '#e8f4ff', text: '#2c5f8d' },
     3: { primary: '#27ae60', bg: '#e8f8f0', text: '#0d5c2e' },
     4: { primary: '#e74c3c', bg: '#ffe8e6', text: '#8b1e0e' },
-    5: { primary: '#9b59b6', bg: '#f4ecf7', text: '#5b2c6f' }
+    5: { primary: '#9b59b6', bg: '#f4ecf7', text: '#5b2c6f' },
+    6: { primary: '#4b0082', bg: '#eebbfa', text: '#3a0063' },
+    7: { primary: '#00ced1', bg: '#e0ffff', text: '#008b8b' },
+    8: { primary: '#ffd700', bg: '#fff8dc', text: '#b8860b' }
 };
 
 export function LevelSummary({

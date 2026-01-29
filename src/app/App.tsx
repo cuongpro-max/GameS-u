@@ -17,7 +17,7 @@ type Page = 'cover' | 'menu' | 'game' | 'summary';
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('cover');
   const [progress, setProgress] = useState<GameProgress>(() => loadProgress());
-  const [selectedLevel, setSelectedLevel] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [selectedLevel, setSelectedLevel] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
   const [lastResult, setLastResult] = useState<LevelResult | null>(null);
 
   // Save progress to localStorage whenever it changes
@@ -30,7 +30,7 @@ export default function App() {
   };
 
   const handleSelectLevel = (level: number) => {
-    setSelectedLevel(level as 1 | 2 | 3 | 4 | 5);
+    setSelectedLevel(level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8);
     setCurrentPage('game');
   };
 
@@ -47,14 +47,14 @@ export default function App() {
 
   const handleReplay = () => {
     if (lastResult) {
-      setSelectedLevel(lastResult.level as 1 | 2 | 3 | 4 | 5);
+      setSelectedLevel(lastResult.level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8);
       setCurrentPage('game');
     }
   };
 
   const handleNextLevel = () => {
-    if (lastResult && lastResult.level < 5) {
-      setSelectedLevel((lastResult.level + 1) as 1 | 2 | 3 | 4 | 5);
+    if (lastResult && lastResult.level < 8) {
+      setSelectedLevel((lastResult.level + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8);
       setCurrentPage('game');
     }
   };
@@ -78,7 +78,7 @@ export default function App() {
     : false;
 
   return (
-    <div className="w-full h-screen overflow-hidden">
+    <div className="w-full h-screen overflow-auto">
       {currentPage === 'cover' && <CoverPage onStart={handleStartGame} />}
 
       {currentPage === 'menu' && (
