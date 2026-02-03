@@ -16,14 +16,15 @@ type Page = 'cover' | 'menu' | 'game' | 'summary';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('cover');
-  const [progress, setProgress] = useState<GameProgress>(() => loadProgress());
+  // Always start fresh - no localStorage persistence
+  const [progress, setProgress] = useState<GameProgress>({
+    unlockedLevels: [1],
+    levelStats: {}
+  });
   const [selectedLevel, setSelectedLevel] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
   const [lastResult, setLastResult] = useState<LevelResult | null>(null);
 
-  // Save progress to localStorage whenever it changes
-  useEffect(() => {
-    saveProgress(progress);
-  }, [progress]);
+  // Progress is not saved to localStorage - resets on each reload
 
   const handleStartGame = () => {
     setCurrentPage('menu');
