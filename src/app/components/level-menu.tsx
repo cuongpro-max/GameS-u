@@ -1,78 +1,91 @@
 import { motion } from 'framer-motion';
-import { Lock, Trophy, Clock, ArrowLeft } from 'lucide-react';
+import { Lock, Trophy, Clock, ArrowLeft, BookOpen, Network } from 'lucide-react';
 import { LevelStats, formatTime } from '../utils/game-progress';
+import level2Img from '../../../image/Level 2.png';
+import level5Img from '../../../image/Level 5.png';
+import level6Img from '../../../image/Level 6.png';
 
 interface LevelMenuProps {
     unlockedLevels: number[];
     levelStats: Record<number, LevelStats>;
     onSelectLevel: (level: number) => void;
     onBackToCover: () => void;
+    onOpenLibrary: () => void;
+    onOpenMindMap: () => void;
 }
 
 const LEVELS_INFO = [
     {
         number: 1,
-        name: 'Thế Giới Quan',
-        quote: 'Vật chất có trước, ý thức có sau.',
+        name: 'Khái Niệm Dân Tộc',
+        quote: 'Dân tộc là cộng đồng người ổn định làm thành nhân dân một nước.',
         color: '#3498db',
         bg: '#ebf5fb',
-        text: '#1a5490'
+        text: '#1a5490',
+        imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&auto=format&fit=crop&q=80'
     },
     {
         number: 2,
-        name: 'Sự Vận Động',
-        quote: 'Vận động là phương thức tồn tại của vật chất.',
+        name: 'Hai Xu Hướng Dân Tộc',
+        quote: 'Xu hướng tách ra độc lập và xu hướng liên hiệp các dân tộc.',
         color: '#4a90e2',
         bg: '#e8f4ff',
-        text: '#2c5f8d'
+        text: '#2c5f8d',
+        imageUrl: level2Img
     },
     {
         number: 3,
-        name: 'Lượng - Chất',
-        quote: 'Tích lũy về lượng dẫn đến thay đổi về chất.',
+        name: 'Nguyên Nhân Tồn Tại Tôn Giáo',
+        quote: 'Tôn giáo tồn tại do nhận thức và tâm lý chưa đồng đều.',
         color: '#27ae60',
         bg: '#e8f8f0',
-        text: '#0d5c2e'
+        text: '#0d5c2e',
+        imageUrl: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?w=600&auto=format&fit=crop&q=80'
     },
     {
         number: 4,
-        name: 'Mâu Thuẫn',
-        quote: 'Mâu thuẫn là động lực của sự phát triển.',
+        name: 'Đức Tin Và Chính Trị',
+        quote: 'Phân biệt rõ hai mặt chính trị và tư tưởng trong tôn giáo.',
         color: '#e74c3c',
         bg: '#ffe8e6',
-        text: '#8b1e0e'
+        text: '#8b1e0e',
+        imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80'
     },
     {
         number: 5,
-        name: 'Phủ Định',
-        quote: 'Cái mới ra đời trên cơ sở kế thừa cái cũ.',
+        name: 'Cương Lĩnh Dân Tộc',
+        quote: 'Các dân tộc hoàn toàn bình đẳng và có quyền tự quyết.',
         color: '#9b59b6',
         bg: '#f4ecf7',
-        text: '#5b2c6f'
+        text: '#5b2c6f',
+        imageUrl: level5Img
     },
     {
         number: 6,
-        name: 'Thực Tiễn',
-        quote: 'Thực tiễn là tiêu chuẩn của chân lý.',
-        color: '#4b0082', // Indigo/Deep Purple
+        name: 'Bản Chất Tôn Giáo',
+        quote: 'Tôn giáo là hình thái ý thức phản ánh hư ảo hiện thực.',
+        color: '#4b0082',
         bg: '#eebbfa',
-        text: '#3a0063'
+        text: '#3a0063',
+        imageUrl: level6Img
     },
     {
         number: 7,
-        name: 'Bản Chất',
-        quote: 'Bản chất quyết định hiện tượng.',
-        color: '#00ced1', // Dark Turquoise
+        name: 'Đặc Điểm Tôn Giáo',
+        quote: 'Tôn giáo có tính lịch sử, quần chúng và tính chính trị.',
+        color: '#00ced1',
         bg: '#e0ffff',
-        text: '#008b8b'
+        text: '#008b8b',
+        imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&auto=format&fit=crop&q=80'
     },
     {
         number: 8,
-        name: 'Tự Do',
-        quote: 'Tự do là sự nhận thức được cái tất yếu.',
-        color: '#ffd700', // Gold
+        name: 'Chính Sách Tôn Giáo',
+        quote: 'Bảo đảm tự do tín ngưỡng và nghiêm cấm lợi dụng tôn giáo.',
+        color: '#ffd700',
         bg: '#fff8dc',
-        text: '#b8860b'
+        text: '#b8860b',
+        imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&auto=format&fit=crop&q=80'
     }
 ];
 
@@ -80,8 +93,12 @@ export function LevelMenu({
     unlockedLevels,
     levelStats,
     onSelectLevel,
-    onBackToCover
+    onBackToCover,
+    onOpenLibrary,
+    onOpenMindMap
 }: LevelMenuProps) {
+    const isLevel8Completed = levelStats[8] && levelStats[8].completedCount > 0;
+
     return (
         <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
             <div className="max-w-6xl mx-auto">
@@ -91,19 +108,44 @@ export function LevelMenu({
                     animate={{ y: 0, opacity: 1 }}
                     className="mb-12"
                 >
-                    <button
-                        onClick={onBackToCover}
-                        className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        Quay lại
-                    </button>
-
-                    <h1 className="text-5xl font-bold text-gray-800 mb-4">
-                        Chọn Màn Chơi
-                    </h1>
-                    <p className="text-xl text-gray-600">
-                        Khám phá 5 quy luật cơ bản của triết học Mác - Lênin
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                        <div>
+                            <button
+                                onClick={onBackToCover}
+                                className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                                Quay lại
+                            </button>
+                            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
+                                Chọn Màn Chơi
+                            </h1>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 sm:mt-11 self-start">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onOpenLibrary}
+                                className="flex items-center gap-2 px-5 py-3 bg-[#3d3529] hover:bg-[#5a5244] text-[#e8e4db] font-semibold rounded-xl shadow-lg border border-[#7a6f5d] transition-all"
+                            >
+                                <BookOpen className="w-5 h-5" />
+                                Thư Viện Tri Thức
+                            </motion.button>
+                            {isLevel8Completed && (
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={onOpenMindMap}
+                                    className="flex items-center gap-2 px-5 py-3 bg-[#b8860b] hover:bg-[#966d03] text-white font-semibold rounded-xl shadow-lg border border-[#7a6f5d] transition-all"
+                                >
+                                    <Network className="w-5 h-5" />
+                                    Bản Đồ Tư Duy
+                                </motion.button>
+                            )}
+                        </div>
+                    </div>
+                    <p className="text-lg text-gray-600 mt-2">
+                        Khám phá các nguyên lý, quy luật và phạm trù của triết học Mác - Lênin
                     </p>
                 </motion.div>
 
@@ -122,7 +164,7 @@ export function LevelMenu({
                                 transition={{ delay: index * 0.1 }}
                                 whileHover={isUnlocked ? { scale: 1.03, y: -5 } : {}}
                                 onClick={() => isUnlocked && onSelectLevel(level.number)}
-                                className={`relative rounded-2xl overflow-hidden shadow-lg transition-all ${isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                                className={`relative rounded-2xl overflow-hidden shadow-lg ${isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
                                     }`}
                                 style={{ backgroundColor: level.bg }}
                             >
@@ -132,6 +174,17 @@ export function LevelMenu({
                                         <Lock className="w-16 h-16 text-white" />
                                     </div>
                                 )}
+
+                                {/* Card Header Image */}
+                                <div className="h-32 w-full relative overflow-hidden">
+                                    <img
+                                        src={level.imageUrl}
+                                        alt={level.name}
+                                        className={`w-full h-full object-cover transition-all duration-300 ${isUnlocked ? 'filter-none hover:scale-105' : 'filter grayscale opacity-30'
+                                            }`}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                                </div>
 
                                 {/* Card Content */}
                                 <div className="p-6">
@@ -211,12 +264,12 @@ export function LevelMenu({
                     className="mt-12 text-center"
                 >
                     <p className="text-gray-600 mb-4">
-                        Tiến độ: {unlockedLevels.length}/5 màn đã mở
+                        Tiến độ: {unlockedLevels.length}/8 màn đã mở
                     </p>
                     <div className="max-w-md mx-auto bg-gray-200 rounded-full h-3 overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${(unlockedLevels.length / 5) * 100}%` }}
+                            animate={{ width: `${(unlockedLevels.length / 8) * 100}%` }}
                             transition={{ delay: 0.8, duration: 0.8 }}
                             className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
                         />

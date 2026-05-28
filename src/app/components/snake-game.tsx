@@ -1,8 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, HelpCircle } from 'lucide-react';
 import { MiniMap } from './mini-map';
 import { soundManager } from './sound-manager';
+import { ComboSystem } from './combo-system';
+import { ParticleEffect } from './particle-effect';
+import level2Img from '../../../image/Level 2.png';
+import level5Img from '../../../image/Level 5.png';
+import level6Img from '../../../image/Level 6.png';
 
 interface Level {
   number: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -30,30 +35,34 @@ interface Level {
   hasPatrolObstacles?: boolean;
   hasFogOfWar?: boolean;
   hasDecoys?: boolean;
+  imageUrl: string;
+  mechanicExplanation: string;
 }
 
 
 const LEVELS: Level[] = [
   {
     number: 1,
-    name: 'Thế Giới Quan',
-    quote: 'Vật chất có trước, ý thức có sau.',
+    name: 'Khái Niệm Dân Tộc',
+    quote: 'Dân tộc là cộng đồng người ổn định làm thành nhân dân một nước.',
     mechanic: 'normal',
     colors: {
-      primary: '#3498db',      // Bright blue
-      secondary: '#5dade2',    // Light blue
-      background: '#ebf5fb',   // Very light blue
-      text: '#1a5490',         // Dark blue for text
+      primary: '#3498db',
+      secondary: '#5dade2',
+      background: '#ebf5fb',
+      text: '#1a5490',
       gradient: ['#3498db', '#5dade2'],
       primaryRgba: 'rgba(52, 152, 219, 1)'
     },
-    sentence: ['Vật chất', 'có trước', 'ý thức', 'có sau'],
-    wrongWords: ['Ý thức', 'có', 'trước', 'vật chất', 'sau']
+    sentence: ['Dân tộc', 'là', 'cộng đồng', 'người', 'ổn định', 'nhân dân', 'một nước'],
+    wrongWords: ['Sắc tộc', 'Chủng tộc', 'Bộ lạc', 'Bộ tộc', 'Đám đông'],
+    imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&auto=format&fit=crop&q=80',
+    mechanicExplanation: 'Cơ chế cơ bản để bạn làm quen với việc điều khiển sâu và ăn các khái niệm dân tộc theo trật tự đúng.'
   },
   {
     number: 2,
-    name: 'Sự Vận Động',
-    quote: 'Vận động là phương thức tồn tại của vật chất.',
+    name: 'Hai Xu Hướng Dân Tộc',
+    quote: 'Xu hướng tách ra độc lập và xu hướng liên hiệp các dân tộc.',
     mechanic: 'moving_words',
     colors: {
       primary: '#4a90e2',
@@ -63,17 +72,19 @@ const LEVELS: Level[] = [
       gradient: ['#4a90e2', '#64b5f6'],
       primaryRgba: 'rgba(74, 144, 226, 1)'
     },
-    sentence: ['Vận động', 'là', 'phương thức', 'tồn tại', 'của vật chất'],
-    wrongWords: ['Tĩnh tại', 'không phải', 'cách thức', 'biến mất', 'thuộc', 'ý thức'],
-    distractorWords: ['mây', 'nước', 'đá', 'gió', 'lửa', 'cát', 'sương']
+    sentence: ['Xu hướng', 'tách ra', 'độc lập', 'và', 'xu hướng', 'liên hiệp', 'các dân tộc'],
+    wrongWords: ['Đồng hóa', 'Bán nước', 'Chia rẽ', 'Cực đoan', 'Cô lập'],
+    distractorWords: ['kinh tế', 'văn hóa', 'địa lý', 'lịch sử', 'xã hội'],
+    imageUrl: level2Img,
+    mechanicExplanation: 'Từ khóa di chuyển liên tục tượng trưng cho dòng chảy khách quan của hai xu hướng tách ra tự quyết và liên hiệp các dân tộc.'
   },
   {
     number: 3,
-    name: 'Lượng - Chất',
-    quote: 'Tích lũy về lượng dẫn đến thay đổi về chất.',
+    name: 'Nguyên Nhân Tồn Tại Tôn Giáo',
+    quote: 'Tôn giáo tồn tại do nhận thức và tâm lý chưa đồng đều.',
     mechanic: 'accumulation',
     requiresAccumulation: true,
-    accumulationCount: 2,  // Changed from 10 to 2
+    accumulationCount: 2,
     colors: {
       primary: '#27ae60',
       secondary: '#2ecc71',
@@ -82,13 +93,15 @@ const LEVELS: Level[] = [
       gradient: ['#27ae60', '#2ecc71'],
       primaryRgba: 'rgba(39, 174, 96, 1)'
     },
-    sentence: ['Tích lũy', 'về lượng', 'dẫn đến', 'thay đổi', 'về chất'],
-    wrongWords: ['Giảm bớt', 'về chất', 'không liên quan', 'giữ nguyên', 'về lượng', 'phá hủy']
+    sentence: ['Tôn giáo', 'tồn tại', 'do nhận thức', 'và', 'tâm lý', 'chưa đồng đều'],
+    wrongWords: ['Biến mất', 'Bị cấm', 'Bắt buộc', 'Đồng bộ', 'Nhất quán'],
+    imageUrl: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?w=600&auto=format&fit=crop&q=80',
+    mechanicExplanation: 'Ăn các hạt tích lũy (•) đại diện cho sự thay đổi về lượng trong nhận thức và kinh tế xã hội trước khi hình thành nên từ khóa chính.'
   },
   {
     number: 4,
-    name: 'Mâu Thuẫn',
-    quote: 'Mâu thuẫn là động lực của sự phát triển.',
+    name: 'Đức Tin Và Chính Trị',
+    quote: 'Phân biệt rõ hai mặt chính trị và tư tưởng trong tôn giáo.',
     mechanic: 'opposing',
     hasOpposingWords: true,
     hasZones: true,
@@ -100,82 +113,89 @@ const LEVELS: Level[] = [
       gradient: ['#e74c3c', '#ff6b6b'],
       primaryRgba: 'rgba(231, 76, 60, 1)'
     },
-    sentence: ['Mâu thuẫn', 'là', 'động lực', 'của', 'sự phát triển'],
-    wrongWords: ['Hòa hợp', 'không phải', 'trở ngại', 'cho', 'sự thoái hóa', 'cản trở'],
-    poisonWords: ['đứng im', 'tĩnh tại', 'bất động', 'trì trệ']
+    sentence: ['Phân biệt', 'rõ', 'hai mặt', 'chính trị', 'và', 'tư tưởng'],
+    wrongWords: ['Đồng nhất', 'Hòa lẫn', 'Đánh đồng', 'Bỏ qua', 'Áp đặt'],
+    poisonWords: ['ly khai', 'chia rẽ', 'kích động', 'thù hận'],
+    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80',
+    mechanicExplanation: 'Đấu trường chia làm 2 vùng đối lập (đỏ/xanh) đại diện cho mặt chính trị và mặt tư tưởng. Tránh các từ độc đuổi theo đại diện cho thế lực phản động cực đoan chia rẽ.'
   },
   {
     number: 5,
-    name: 'Phủ Định',
-    quote: 'Cái mới ra đời trên cơ sở kế thừa cái cũ.',
+    name: 'Cương Lĩnh Dân Tộc',
+    quote: 'Các dân tộc hoàn toàn bình đẳng và có quyền tự quyết.',
     mechanic: 'legacy',
     isCircular: true,
     disableWrap: true,
     colors: {
       primary: '#9b59b6',
       secondary: '#f39c12',
-      background: '#f3e8ff',
+      background: '#f4ecf7',
       text: '#6c2b7a',
       gradient: ['#9b59b6', '#c084fc'],
       primaryRgba: 'rgba(155, 89, 182, 1)'
     },
-    sentence: ['Cái mới', 'ra đời', 'trên cơ sở', 'kế thừa', 'cái cũ'],
-    wrongWords: ['Cái cũ', 'biến mất', 'không liên quan', 'từ bỏ', 'hoàn toàn mới', 'phủ nhận']
+    sentence: ['Các dân tộc', 'hoàn toàn', 'bình đẳng', 'và', 'có quyền', 'tự quyết'],
+    wrongWords: ['Đặc quyền', 'Áp bức', 'Lệ thuộc', 'Phân biệt', 'Cai trị'],
+    imageUrl: level5Img,
+    mechanicExplanation: 'Các vật cản xuất hiện tại vị trí cũ của sâu đại diện cho tính kế thừa biện chứng và sự phủ định có chắt lọc trong quá trình lịch sử.'
   },
   {
     number: 6,
-    name: 'Thực Tiễn',
-    quote: 'Thực tiễn là tiêu chuẩn của chân lý.',
+    name: 'Bản Chất Tôn Giáo',
+    quote: 'Tôn giáo là hình thái ý thức phản ánh hư ảo hiện thực.',
     mechanic: 'normal',
     hasFogOfWar: true,
     colors: {
-      primary: '#4b0082', // Indigo/Deep Purple
-      secondary: '#E6E6FA', // Lavender
+      primary: '#4b0082',
+      secondary: '#E6E6FA',
       background: '#eebbfa',
       text: '#3a0063',
       gradient: ['#4b0082', '#8A2BE2'],
       primaryRgba: 'rgba(75, 0, 130, 1)'
     },
-    sentence: ['Thực tiễn', 'là', 'tiêu chuẩn', 'của', 'chân lý'],
-    wrongWords: ['Lý thuyết', 'ảo tưởng', 'suy đoán', 'lời nói', 'giả thuyết']
+    sentence: ['Tôn giáo', 'là', 'hình thái', 'ý thức', 'phản ánh', 'hư ảo', 'hiện thực'],
+    wrongWords: ['Khoa học', 'Duy vật', 'Thực tế', 'Chân lý', 'Biện chứng'],
+    imageUrl: level6Img,
+    mechanicExplanation: 'Sương mù che khuất tầm nhìn (Fog of War) tượng trưng cho tính chất hư ảo và chủ quan của ý thức tôn giáo khi chưa được soi sáng bởi khoa học.'
   },
   {
     number: 7,
-    name: 'Bản Chất',
-    quote: 'Bản chất quyết định hiện tượng.',
+    name: 'Đặc Điểm Tôn Giáo',
+    quote: 'Tôn giáo có tính lịch sử, quần chúng và tính chính trị.',
     mechanic: 'normal',
     hasDecoys: true,
     colors: {
-      primary: '#00ced1', // Dark Turquoise
-      secondary: '#40e0d0', // Turquoise
+      primary: '#00ced1',
+      secondary: '#40e0d0',
       background: '#e0ffff',
       text: '#008b8b',
       gradient: ['#00ced1', '#20b2aa'],
       primaryRgba: 'rgba(0, 206, 209, 1)'
     },
-    sentence: ['Bản chất', 'quyết định', 'hiện tượng'],
-    wrongWords: ['Hiện tượng', 'bề ngoài', 'ngẫu nhiên', 'thay thế', 'che giấu']
+    sentence: ['Tôn giáo', 'có', 'tính lịch sử', 'quần chúng', 'và', 'chính trị'],
+    wrongWords: ['Vĩnh hằng', 'Cá biệt', 'Vô hại', 'Bất biến', 'Trung lập'],
+    imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&auto=format&fit=crop&q=80',
+    mechanicExplanation: 'Các từ giả mạo (Decoys) xuất hiện tràn ngập đại diện cho sự biến tướng, mê tín dị đoan dễ nhầm lẫn với bản chất tinh thần quần chúng.'
   },
   {
     number: 8,
-    name: 'Tự Do',
-    quote: 'Tự do là sự nhận thức được cái tất yếu.',
+    name: 'Chính Sách Tôn Giáo',
+    quote: 'Bảo đảm tự do tín ngưỡng và nghiêm cấm lợi dụng tôn giáo.',
     mechanic: 'normal',
-    disableWrap: false, // ENABLE WRAP for this level. 
-    // Wait, by default disableWrap is undefined, which usually means "wrap" is disabled (die on wall) in standard snake?
-    // Let's check logic: "if (wallCollisionEnabled) ... error".
-    // I need to check where `wallCollisionEnabled` is set or used.
+    disableWrap: false,
     hasPatrolObstacles: true,
     colors: {
-      primary: '#ffd700', // Gold
-      secondary: '#daa520', // Goldenrod
-      background: '#fff8dc', // Cornsilk
-      text: '#b8860b', // Dark Goldenrod
+      primary: '#ffd700',
+      secondary: '#daa520',
+      background: '#fff8dc',
+      text: '#b8860b',
       gradient: ['#ffd700', '#ffa500'],
       primaryRgba: 'rgba(255, 215, 0, 1)'
     },
-    sentence: ['Tự do', 'là', 'nhận thức', 'cái', 'tất yếu'],
-    wrongWords: ['Tùy tiện', 'ngẫu hứng', 'bất chấp', 'vô kỉ luật', 'may rủi', 'bắt buộc']
+    sentence: ['Bảo đảm', 'tự do', 'tín ngưỡng', 'và', 'nghiêm cấm', 'lợi dụng', 'tôn giáo'],
+    wrongWords: ['Cấm đoán', 'Áp đặt', 'Chia rẽ', 'Kích động', 'Mê tín'],
+    imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&auto=format&fit=crop&q=80',
+    mechanicExplanation: 'Các chướng ngại vật di chuyển tuần tra tượng trưng cho khuôn khổ pháp luật của Nhà nước (Cái tất yếu). Đi lại tự do nhưng phải tuân thủ kỷ cương pháp luật.'
   }
 ];
 
@@ -222,13 +242,127 @@ const getGameSpeed = (level: number, zone?: 'red' | 'blue') => {
   return baseSpeed;
 };
 
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+const QUIZ_QUESTIONS: Record<number, QuizQuestion[]> = {
+  1: [
+    {
+      question: "Dân tộc theo nghĩa rộng (Nation) chỉ khái niệm nào?",
+      options: [
+        "Cộng đồng tộc người thành phần",
+        "Quốc gia - dân tộc độc lập có lãnh thổ và nền kinh tế thống nhất",
+        "Một liên minh tôn giáo quốc tế",
+        "Hình thức cộng đồng thời nguyên thủy"
+      ],
+      correctIndex: 1,
+      explanation: "Nghĩa rộng chỉ quốc gia - dân tộc độc lập có lãnh thổ và nền kinh tế thống nhất."
+    }
+  ],
+  2: [
+    {
+      question: "Hai xu hướng phát triển khách quan của dân tộc gồm xu hướng nào?",
+      options: [
+        "Đồng hóa dân tộc và cô lập dân tộc",
+        "Tách ra tự quyết thành lập quốc gia độc lập và liên hiệp các dân tộc lại",
+        "Áp bức dân tộc và giải phóng dân tộc đơn độc",
+        "Hòa hợp tôn giáo và phân tách quốc gia"
+      ],
+      correctIndex: 1,
+      explanation: "Hai xu hướng khách quan gồm: Xu hướng tách ra tự quyết và xu hướng liên hiệp các dân tộc."
+    }
+  ],
+  3: [
+    {
+      question: "Nguyên nhân nhận thức nào làm tôn giáo vẫn tồn tại trong thời kỳ quá độ?",
+      options: [
+        "Khoa học chưa giải thích được mọi hiện tượng, trình độ dân trí chưa đồng đều",
+        "Sự sợ hãi trước sức mạnh giai cấp thống trị",
+        "Sự áp đặt của Hiến pháp cách mạng",
+        "Đức tin tôn giáo là tuyệt đối đúng đắn"
+      ],
+      correctIndex: 0,
+      explanation: "Tôn giáo tồn tại do nhận thức của con người chưa đồng đều và khoa học chưa giải thích được hết các hiện tượng xã hội/tự nhiên."
+    }
+  ],
+  4: [
+    {
+      question: "Mặt chính trị trong giải quyết vấn đề tôn giáo phản ánh điều gì?",
+      options: [
+        "Sự khác biệt về đức tin và nhận thức giữa người đạo và không đạo",
+        "Sự lợi dụng tôn giáo của thế lực phản động chống phá cách mạng",
+        "Tính lịch sử lâu đời của các đức tin lành mạnh",
+        "Nguyên tắc tự do tín ngưỡng của người dân"
+      ],
+      correctIndex: 1,
+      explanation: "Mặt chính trị phản ánh sự lợi dụng tôn giáo của các thế lực phản động để chống phá cách mạng, đây là mâu thuẫn đối kháng."
+    }
+  ],
+  5: [
+    {
+      question: "Ba nội dung cốt lõi của Cương lĩnh dân tộc do Lênin soạn thảo là gì?",
+      options: [
+        "Bình đẳng dân tộc; Tự quyết dân tộc; Liên hiệp công nhân tất cả các dân tộc",
+        "Đồng hóa các tộc người; Giải tán bộ lạc; Xây dựng quốc gia đơn nhất",
+        "Ưu tiên dân tộc đa số; Bảo tồn biệt lập; Tự do buôn bán biên giới",
+        "Giải quyết áp bức; Phân chia vùng kinh tế; Bài trừ tôn giáo ngoại lai"
+      ],
+      correctIndex: 0,
+      explanation: "Cương lĩnh dân tộc gồm: Các dân tộc hoàn toàn bình đẳng; Các dân tộc được quyền tự quyết; Liên hiệp công nhân tất cả các dân tộc."
+    }
+  ],
+  6: [
+    {
+      question: "Theo quan điểm duy vật biện chứng, bản chất tôn giáo phản ánh hiện thực như thế nào?",
+      options: [
+        "Là sự phản ánh chân thực và khoa học thế giới tự nhiên",
+        "Là hình thái ý thức xã hội phản ánh hư ảo hiện thực khách quan vào đầu óc con người",
+        "Là một chân lý tối cao do thần thánh ban tặng",
+        "Là kết quả tất yếu của sự phát triển kinh tế thị trường"
+      ],
+      correctIndex: 1,
+      explanation: "Bản chất tôn giáo là một hình thái ý thức xã hội phản ánh hư ảo hiện thực khách quan vào đầu óc con người."
+    }
+  ],
+  7: [
+    {
+      question: "Tôn giáo có những đặc điểm cơ bản nào sau đây?",
+      options: [
+        "Tính vĩnh hằng, tính độc lập, tính phi chính trị",
+        "Tính lịch sử, tính quần chúng, tính chính trị",
+        "Tính kinh tế, tính hiện đại, tính thực dụng",
+        "Tính ngẫu nhiên, tính nhất thời, tính bất biến"
+      ],
+      correctIndex: 1,
+      explanation: "Ba đặc điểm tôn giáo: Tính lịch sử (tồn tại có giới hạn), Tính quần chúng (nhu cầu số đông), Tính chính trị (phản ánh lợi ích giai cấp)."
+    }
+  ],
+  8: [
+    {
+      question: "Nội dung nghiêm cấm nào được nhấn mạnh trong chính sách tôn giáo của Việt Nam?",
+      options: [
+        "Cấm tự do đi lễ nhà thờ hoặc chùa chiền",
+        "Nghiêm cấm lợi dụng tôn giáo để chia rẽ khối đại đoàn kết dân tộc hoặc vi phạm pháp luật",
+        "Cấm truyền bá các tư tưởng đạo đức lành mạnh",
+        "Cấm người có đạo tham gia vào bộ máy Nhà nước"
+      ],
+      correctIndex: 1,
+      explanation: "Việt Nam bảo đảm tự do tín ngưỡng nhưng nghiêm cấm các hành vi lợi dụng tôn giáo để chống phá hoặc vi phạm pháp luật."
+    }
+  ]
+};
+
 export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   const levelData = LEVELS[level - 1];
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [direction, setDirection] = useState<'UP' | 'DOWN' | 'LEFT' | 'RIGHT'>('RIGHT');
   const [collectedWords, setCollectedWords] = useState<string[]>([]);
   const [orbs, setOrbs] = useState<ConceptOrb[]>([]);
-  const [gameState, setGameState] = useState<'playing' | 'completed' | 'error'>('playing');
+  const [gameState, setGameState] = useState<'playing' | 'completed' | 'error' | 'quiz'>('playing');
   const [errorMessage, setErrorMessage] = useState('');
   const [understanding, setUnderstanding] = useState(0);
   const [showRipple, setShowRipple] = useState(false);
@@ -248,6 +382,40 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   const [currentZone, setCurrentZone] = useState<'red' | 'blue'>('red');
   const [legacyObstacles, setLegacyObstacles] = useState<Position[]>([]);
   const [wallCollisionEnabled, setWallCollisionEnabled] = useState(false);
+
+  // Quiz Gates states
+  const [quizOrb, setQuizOrb] = useState<Position | null>(null);
+  const [quizSpawned, setQuizSpawned] = useState<boolean>(false);
+  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [showAnswerFeedback, setShowAnswerFeedback] = useState<boolean>(false);
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean>(false);
+  const [speedOffset, setSpeedOffset] = useState<number>(0);
+
+  const handleCheckAnswer = () => {
+    if (selectedOption === null || !currentQuestion) return;
+    const correct = selectedOption === currentQuestion.correctIndex;
+    setIsAnswerCorrect(correct);
+    setShowAnswerFeedback(true);
+    
+    if (correct) {
+      setSpeedOffset(prev => prev + 50); // Slow down the snake
+      setUnderstanding(prev => Math.min(100, prev + 10)); // Boost understanding
+      if (soundEnabled) {
+        soundManager.playCorrectSound();
+      }
+    } else {
+      setPenaltyTime(prev => prev + 5); // Add 5 seconds penalty
+      if (soundEnabled) {
+        soundManager.playWrongSound();
+      }
+    }
+  };
+
+  const handleCloseQuiz = () => {
+    setGameState('playing');
+    setCurrentQuestion(null);
+  };
 
   // Timer system for speedrun
   const [elapsedTime, setElapsedTime] = useState(0);  // in seconds
@@ -534,7 +702,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    const currentSpeed = getGameSpeed(level, currentZone);
+    const currentSpeed = getGameSpeed(level, currentZone) + speedOffset;
 
     gameLoopRef.current = window.setInterval(() => {
       const now = Date.now();
@@ -591,6 +759,20 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         // Add to trail
         setTrail(prev => [...prev.slice(-15), head]);
 
+        // Check collision with Quiz Orb
+        if (quizOrb && newHead.x === quizOrb.x && newHead.y === quizOrb.y) {
+          setQuizOrb(null);
+          const questions = QUIZ_QUESTIONS[level] || [];
+          const randomQ = questions[Math.floor(Math.random() * questions.length)];
+          if (randomQ) {
+            setCurrentQuestion(randomQ);
+            setGameState('quiz');
+            setSelectedOption(null);
+            setShowAnswerFeedback(false);
+          }
+          return prevSnake;
+        }
+
         // Check collision with self
         if (prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
           return prevSnake;
@@ -599,7 +781,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         // Check collision with legacy obstacles (Level 5)
         if (level === 5 && legacyObstacles.some(obstacle => obstacle.x === newHead.x && obstacle.y === newHead.y)) {
           setGameState('error');
-          setErrorMessage('Đụng vật cản!');
+          setErrorMessage('Đụng vật cản lịch sử!');
           if (soundEnabled) {
             soundManager.playWrongSound();
           }
@@ -613,7 +795,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         // Level 8: Patrol Obstacles collision
         if (level === 8 && obstacles.some(obs => obs.x === newHead.x && obs.y === newHead.y)) {
           setGameState('error');
-          setErrorMessage('Đụng chướng ngại (Tất yếu)!');
+          setErrorMessage('Vi phạm pháp luật (Ranh giới tất yếu)!');
           if (soundEnabled) {
             soundManager.playWrongSound();
           }
@@ -723,7 +905,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           } else {
             // Wrong word - show error
             setGameState('error');
-            setErrorMessage('Sự mâu thuẫn trong tư duy!');
+            setErrorMessage('Nhầm lẫn nhận thức dân tộc/tôn giáo!');
             setCombo(0);
             setShowCombo(false);
 
@@ -753,7 +935,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         // Check collision with chasing poison orbs (Level 4)
         if (hitChasingOrb) {
           setGameState('error');
-          setErrorMessage('Bị từ độc đuổi kịp!');
+          setErrorMessage('Bị thế lực cực đoan lợi dụng!');
           setCombo(0);
           setShowCombo(false);
 
@@ -814,9 +996,27 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
     setAccumulationOrbs(0);
     setChasingOrbs([]);
     setCurrentZone('red');
+    
+    // Reset Quiz states
+    setQuizOrb(null);
+    setQuizSpawned(false);
+    setCurrentQuestion(null);
+    setSelectedOption(null);
+    setShowAnswerFeedback(false);
+    setIsAnswerCorrect(false);
+    setSpeedOffset(0);
     setLegacyObstacles([]);
     setWallCollisionEnabled(levelData.disableWrap || false);
   }, [level]);
+
+  // Spawn Quiz Orb when halfway
+  useEffect(() => {
+    if (gameState === 'playing' && !quizSpawned && collectedWords.length > 0 && collectedWords.length === Math.ceil(levelData.sentence.length / 2)) {
+      const pos = getRandomPosition(snake, orbs);
+      setQuizOrb(pos);
+      setQuizSpawned(true);
+    }
+  }, [collectedWords.length, gameState, quizSpawned, snake, orbs]);
 
   function getRandomPosition(snake: Position[], existingOrbs: ConceptOrb[]): Position {
     let pos: Position;
@@ -884,7 +1084,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
             border: `2px solid ${levelData.colors.text}`,
           }}
         >
-          <span className="text-[7px] text-center leading-tight px-1 text-white font-bold">{orb.word}</span>
+          <span className="text-[7px] text-center leading-tight px-1 text-[#0f172a] font-bold">{orb.word}</span>
         </motion.div>
       );
     } else if (orb.shape === 'square') {
@@ -910,7 +1110,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
             border: `2px solid ${levelData.colors.text}`,
           }}
         >
-          <span className="text-[7px] text-center leading-tight px-1 text-white font-bold">{orb.word}</span>
+          <span className="text-[7px] text-center leading-tight px-1 text-[#0f172a] font-bold">{orb.word}</span>
         </motion.div>
       );
     } else {
@@ -938,7 +1138,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           }}
         >
           <span
-            className="text-[7px] text-center leading-tight text-white font-bold"
+            className="text-[7px] text-center leading-tight text-[#0f172a] font-bold"
             style={{
               position: 'absolute',
               bottom: '2px',
@@ -969,11 +1169,11 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
     >
       {/* Hint System - Removed (component not implemented) */}
 
-      {/* Combo System - Removed (component not implemented) */}
+      <ComboSystem combo={combo} show={showCombo} color={levelData.colors.primary} />
 
       {/* Status Bar */}
       <div
-        className="px-8 py-6 border-b-2 flex items-center justify-between relative overflow-hidden"
+        className="px-6 py-3 md:py-4 border-b-2 flex items-center justify-between relative overflow-hidden"
         style={{
           backgroundColor: levelData.colors.secondary,
           borderColor: levelData.colors.text
@@ -1067,7 +1267,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
       {/* Sentence Progress */}
       <div
-        className="px-8 py-4 border-b flex flex-wrap gap-2 items-center min-h-[60px]"
+        className="px-6 py-2 md:py-3 border-b flex flex-wrap gap-2 items-center min-h-[50px]"
         style={{
           backgroundColor: 'rgba(255,255,255,0.5)',
           borderColor: levelData.colors.text + '40'
@@ -1082,8 +1282,8 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
             initial={false}
             animate={{
               backgroundColor: index < collectedWords.length
-                ? levelData.colors.primaryRgba
-                : levelData.colors.primaryRgba.replace('1)', '0)'),
+                ? levelData.colors.text
+                : 'transparent',
               scale: index === collectedWords.length - 1 ? [1, 1.1, 1] : 1
             }}
             transition={{ scale: { duration: 0.3 } }}
@@ -1092,7 +1292,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               color: index < collectedWords.length
                 ? '#fff'
                 : levelData.colors.text + '60',
-              border: `1px solid ${levelData.colors.text}40`,
+              border: `1.5px ${index < collectedWords.length ? 'solid' : 'dashed'} ${levelData.colors.text}${index < collectedWords.length ? '' : '40'}`,
               fontWeight: index < collectedWords.length ? 600 : 400,
               boxShadow: index < collectedWords.length
                 ? `0 2px 8px ${levelData.colors.primary}40`
@@ -1136,316 +1336,494 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
       )}
 
       {/* Game Arena */}
-      <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center gap-4 md:gap-8 p-4 md:p-6 lg:p-8 relative overflow-hidden">
         {/* Level 4: Split zones (red/blue) */}
         {level === 4 && levelData.hasZones && (
-          <div className="absolute inset-0 flex">
+          <div className="absolute inset-0 flex pointer-events-none">
             <motion.div
               className="flex-1"
-              animate={{ opacity: currentZone === 'red' ? [0.3, 0.4, 0.3] : [0.1, 0.15, 0.1] }}
+              animate={{ opacity: currentZone === 'red' ? [0.2, 0.3, 0.2] : [0.05, 0.1, 0.05] }}
               transition={{ duration: 2, repeat: Infinity }}
               style={{ backgroundColor: levelData.colors.primary }}
             />
             <motion.div
               className="flex-1"
-              animate={{ opacity: currentZone === 'blue' ? [0.3, 0.4, 0.3] : [0.1, 0.15, 0.1] }}
+              animate={{ opacity: currentZone === 'blue' ? [0.2, 0.3, 0.2] : [0.05, 0.1, 0.05] }}
               transition={{ duration: 2, repeat: Infinity }}
               style={{ backgroundColor: levelData.colors.secondary }}
             />
           </div>
         )}
 
-        {/* Patrol Obstacles (Level 8) */}
-        {level === 8 && obstacles.map((obstacle, index) => (
-          <motion.div
-            key={`obstacle-${index}`}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        {/* Column 1: Playing Board */}
+        <div className="relative">
+          <div
+            className="relative"
             style={{
-              position: 'absolute',
-              left: `${obstacle.x * CELL_SIZE}px`,
-              top: `${obstacle.y * CELL_SIZE}px`,
-              width: `${CELL_SIZE}px`,
-              height: `${CELL_SIZE}px`,
-              backgroundColor: '#b8860b',
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '10px',
-              boxShadow: '0 0 10px rgba(184, 134, 11, 0.6)'
+              width: `${GRID_SIZE * CELL_SIZE}px`,
+              height: `${GRID_SIZE * CELL_SIZE}px`,
+              border: `3px solid ${levelData.colors.text}`,
+              backgroundColor: levelData.colors.background,
+              backgroundImage: `
+                radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 27px, ${levelData.colors.primary}15 27px, ${levelData.colors.primary}15 28px),
+                repeating-linear-gradient(90deg, transparent, transparent 27px, ${levelData.colors.primary}15 27px, ${levelData.colors.primary}15 28px)
+              `,
+              boxShadow: `0 8px 32px rgba(0,0,0,0.1), 0 0 0 8px ${levelData.colors.primary}20`
             }}
           >
-            ⚡
-          </motion.div>
-        ))}
-
-        {/* Mini-map */}
-        <div className="absolute top-24 right-4 z-20">
-          <MiniMap
-            snake={snake}
-            orbs={orbs}
-            gridSize={GRID_SIZE}
-            color={levelData.colors.primary}
-          />
-        </div>
-
-        <div
-          className="relative"
-          style={{
-            width: `${GRID_SIZE * CELL_SIZE}px`,
-            height: `${GRID_SIZE * CELL_SIZE}px`,
-            border: `3px solid ${levelData.colors.text}`,
-            backgroundColor: 'rgba(255,255,255,0.9)',
-            boxShadow: `0 8px 32px rgba(0,0,0,0.1), 0 0 0 8px ${levelData.colors.primary}20`
-          }}
-        >
-          {/* Trail effect */}
-          {trail.map((pos, index) => (
-            <div
-              key={`trail-${index}`}
-              style={{
-                position: 'absolute',
-                left: `${pos.x * CELL_SIZE}px`,
-                top: `${pos.y * CELL_SIZE}px`,
-                width: `${CELL_SIZE}px`,
-                height: `${CELL_SIZE}px`,
-                backgroundColor: levelData.colors.primary,
-                opacity: (index / trail.length) * 0.2,
-                borderRadius: '4px',
-                pointerEvents: 'none'
-              }}
-            />
-          ))}
-
-          {/* Legacy obstacles (Level 5) */}
-          {level === 5 && legacyObstacles.map((obstacle, index) => (
-            <motion.div
-              key={`legacy-${index}`}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 0.6, scale: 1 }}
-              style={{
-                position: 'absolute',
-                left: `${obstacle.x * CELL_SIZE}px`,
-                top: `${obstacle.y * CELL_SIZE}px`,
-                width: `${CELL_SIZE}px`,
-                height: `${CELL_SIZE}px`,
-                backgroundColor: levelData.colors.text,
-                border: `2px solid ${levelData.colors.primary}`,
-                borderRadius: '3px',
-                boxShadow: `0 0 10px ${levelData.colors.primary}40`
-              }}
-            />
-          ))}
-
-          {/* Chasing poison orbs (Level 4) */}
-          {level === 4 && chasingOrbs.map((orb, index) => (
-            <motion.div
-              key={orb.id}
-              animate={{
-                scale: [1, 1.2, 1],
-                rotate: [0, 360]
-              }}
-              transition={{
-                scale: { duration: 1, repeat: Infinity },
-                rotate: { duration: 2, repeat: Infinity, ease: 'linear' }
-              }}
-              style={{
-                position: 'absolute',
-                left: `${orb.position.x * CELL_SIZE}px`,
-                top: `${orb.position.y * CELL_SIZE}px`,
-                width: `${CELL_SIZE}px`,
-                height: `${CELL_SIZE}px`,
-                background: `linear-gradient(135deg, #ff0000, #cc0000)`,
-                border: '2px solid #000',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '7px',
-                fontWeight: 700,
-                color: '#fff',
-                boxShadow: '0 0 15px rgba(255,0,0,0.8)',
-                zIndex: 15
-              }}
-            >
-              <span className="text-[6px] text-center leading-tight px-0.5">{orb.word}</span>
-            </motion.div>
-          ))}
-
-          {/* Snake */}
-          {snake.map((segment, index) => (
-            <motion.div
-              key={`snake-${index}`}
-              animate={showRipple && index === 0 ? {
-                scale: [1, 1.3, 1],
-                rotate: [0, 5, -5, 0]
-              } : {}}
-              transition={{ duration: 0.5 }}
-              style={{
-                position: 'absolute',
-                left: `${segment.x * CELL_SIZE}px`,
-                top: `${segment.y * CELL_SIZE}px`,
-                width: `${CELL_SIZE}px`,
-                height: `${CELL_SIZE}px`,
-                background: index === 0
-                  ? `linear-gradient(135deg, ${levelData.colors.gradient[0]}, ${levelData.colors.gradient[1]})`
-                  : `linear-gradient(135deg, ${levelData.colors.text}, ${levelData.colors.text}dd)`,
-                border: `2px solid ${levelData.colors.secondary}`,
-                borderRadius: index === 0 ? '6px' : '3px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '8px',
-                fontWeight: 600,
-                color: '#fff',
-                zIndex: 10,
-                boxShadow: index === 0
-                  ? `0 0 20px ${levelData.colors.primary}80, inset 0 0 10px rgba(255,255,255,0.3)`
-                  : `inset 0 0 5px rgba(255,255,255,0.2)`
-              }}
-            >
-              {index === 0 && collectedWords.length > 0 && (
-                <span className="text-[7px] text-center leading-tight px-0.5 drop-shadow-lg">
-                  {collectedWords[collectedWords.length - 1]}
-                </span>
-              )}
-              {index > 0 && index <= collectedWords.length && (
-                <span className="text-[7px] text-center leading-tight px-0.5">
-                  {collectedWords[collectedWords.length - index]}
-                </span>
-              )}
-            </motion.div>
-          ))}
-
-          {/* Orbs */}
-          {orbs.map((orb, index) => renderShape(orb, index))}
-
-          {/* Particles - Removed (component not implemented) */}
-
-          {/* Error overlay */}
-          <AnimatePresence>
-            {gameState === 'error' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center"
+            {/* Level 6: Fog of War */}
+            {level === 6 && (
+              <div
+                className="absolute inset-0 pointer-events-none z-20 transition-all duration-100"
                 style={{
-                  backgroundColor: 'rgba(231, 76, 60, 0.4)',
-                  backdropFilter: 'blur(4px)'
+                  background: `radial-gradient(circle 90px at ${snake[0].x * CELL_SIZE + CELL_SIZE / 2}px ${snake[0].y * CELL_SIZE + CELL_SIZE / 2}px, transparent 0%, transparent 40%, rgba(15, 10, 25, 0.96) 90%)`
+                }}
+              />
+            )}
+
+            {/* Patrol Obstacles (Level 8) - Placed inside grid container to maintain absolute coordination alignment */}
+            {level === 8 && obstacles.map((obstacle, index) => (
+              <motion.div
+                key={`obstacle-${index}`}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                style={{
+                  position: 'absolute',
+                  left: `${obstacle.x * CELL_SIZE}px`,
+                  top: `${obstacle.y * CELL_SIZE}px`,
+                  width: `${CELL_SIZE}px`,
+                  height: `${CELL_SIZE}px`,
+                  backgroundColor: levelData.colors.text,
+                  border: `2px solid ${levelData.colors.primary}`,
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  boxShadow: `0 0 10px ${levelData.colors.primary}60`,
+                  zIndex: 12
                 }}
               >
-                <motion.p
-                  initial={{ scale: 0.8, y: 20 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.8, y: -20 }}
-                  className="text-2xl font-bold px-6 py-3 rounded-lg"
+                ⚖️
+              </motion.div>
+            ))}
+
+            {/* Trail effect */}
+            {trail.map((pos, index) => (
+              <div
+                key={`trail-${index}`}
+                style={{
+                  position: 'absolute',
+                  left: `${pos.x * CELL_SIZE}px`,
+                  top: `${pos.y * CELL_SIZE}px`,
+                  width: `${CELL_SIZE}px`,
+                  height: `${CELL_SIZE}px`,
+                  backgroundColor: levelData.colors.primary,
+                  opacity: (index / trail.length) * 0.2,
+                  borderRadius: '4px',
+                  pointerEvents: 'none'
+                }}
+              />
+            ))}
+
+            {/* Legacy obstacles (Level 5) */}
+            {level === 5 && legacyObstacles.map((obstacle, index) => (
+              <motion.div
+                key={`legacy-${index}`}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 0.8, scale: 1 }}
+                style={{
+                  position: 'absolute',
+                  left: `${obstacle.x * CELL_SIZE}px`,
+                  top: `${obstacle.y * CELL_SIZE}px`,
+                  width: `${CELL_SIZE}px`,
+                  height: `${CELL_SIZE}px`,
+                  backgroundColor: levelData.colors.text,
+                  border: `2px solid ${levelData.colors.primary}`,
+                  borderRadius: '6px',
+                  boxShadow: `0 0 10px ${levelData.colors.primary}60`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  zIndex: 12
+                }}
+              >
+                📜
+              </motion.div>
+            ))}
+
+            {/* Chasing poison orbs (Level 4) */}
+            {level === 4 && chasingOrbs.map((orb, index) => (
+              <motion.div
+                key={orb.id}
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 360]
+                }}
+                transition={{
+                  scale: { duration: 1, repeat: Infinity },
+                  rotate: { duration: 2, repeat: Infinity, ease: 'linear' }
+                }}
+                style={{
+                  position: 'absolute',
+                  left: `${orb.position.x * CELL_SIZE}px`,
+                  top: `${orb.position.y * CELL_SIZE}px`,
+                  width: `${CELL_SIZE}px`,
+                  height: `${CELL_SIZE}px`,
+                  background: `linear-gradient(135deg, #ff0000, #cc0000)`,
+                  border: '2px solid #000',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '7px',
+                  fontWeight: 700,
+                  color: '#fff',
+                  boxShadow: '0 0 15px rgba(255,0,0,0.8)',
+                  zIndex: 15
+                }}
+              >
+                <span className="text-[6px] text-center leading-tight px-0.5">{orb.word}</span>
+              </motion.div>
+            ))}
+
+            {/* Snake */}
+            {snake.map((segment, index) => (
+              <motion.div
+                key={`snake-${index}`}
+                animate={showRipple && index === 0 ? {
+                  scale: [1, 1.3, 1],
+                  rotate: [0, 5, -5, 0]
+                } : {}}
+                transition={{ duration: 0.5 }}
+                style={{
+                  position: 'absolute',
+                  left: `${segment.x * CELL_SIZE}px`,
+                  top: `${segment.y * CELL_SIZE}px`,
+                  width: `${CELL_SIZE}px`,
+                  height: `${CELL_SIZE}px`,
+                  background: index === 0
+                    ? `linear-gradient(135deg, ${levelData.colors.gradient[0]}, ${levelData.colors.gradient[1]})`
+                    : `linear-gradient(135deg, ${levelData.colors.text}, ${levelData.colors.text}dd)`,
+                  border: `2px solid ${levelData.colors.secondary}`,
+                  borderRadius: index === 0 ? '6px' : '3px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '8px',
+                  fontWeight: 600,
+                  color: index === 0 ? '#0f172a' : '#fff',
+                  zIndex: 10,
+                  boxShadow: index === 0
+                    ? `0 0 20px ${levelData.colors.primary}80, inset 0 0 10px rgba(255,255,255,0.3)`
+                    : `inset 0 0 5px rgba(255,255,255,0.2)`
+                }}
+              >
+                {index === 0 && collectedWords.length > 0 && (
+                  <span className="text-[7px] text-center leading-tight px-0.5 drop-shadow-lg">
+                    {collectedWords[collectedWords.length - 1]}
+                  </span>
+                )}
+                {index > 0 && index <= collectedWords.length && (
+                  <span className="text-[7px] text-center leading-tight px-0.5">
+                    {collectedWords[collectedWords.length - index]}
+                  </span>
+                )}
+              </motion.div>
+            ))}
+
+            {/* Orbs */}
+            {orbs.map((orb, index) => renderShape(orb, index))}
+
+            {/* Particle Effects */}
+            {particles.map((p) => (
+              <ParticleEffect key={p.id} x={p.x} y={p.y} color={p.color} />
+            ))}
+
+            {/* Quiz Orb */}
+            {quizOrb && (
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 10, -10, 0]
+                }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                style={{
+                  position: 'absolute',
+                  left: `${quizOrb.x * CELL_SIZE}px`,
+                  top: `${quizOrb.y * CELL_SIZE}px`,
+                  width: `${CELL_SIZE}px`,
+                  height: `${CELL_SIZE}px`,
+                  backgroundColor: '#f1c40f',
+                  border: `2.5px solid ${levelData.colors.text}`,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  boxShadow: '0 0 15px rgba(241, 196, 15, 0.8)',
+                  zIndex: 15
+                }}
+              >
+                ❓
+              </motion.div>
+            )}
+
+            {/* Error overlay */}
+            <AnimatePresence>
+              {gameState === 'error' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex items-center justify-center z-30"
                   style={{
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    color: '#fff',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+                    backgroundColor: 'rgba(231, 76, 60, 0.4)',
+                    backdropFilter: 'blur(4px)'
                   }}
                 >
-                  {errorMessage}
-                </motion.p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <motion.p
+                    initial={{ scale: 0.8, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.8, y: -20 }}
+                    className="text-2xl font-bold px-6 py-3 rounded-lg"
+                    style={{
+                      backgroundColor: 'rgba(0,0,0,0.9)',
+                      color: '#fff',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+                    }}
+                  >
+                    {errorMessage}
+                  </motion.p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Completion overlay */}
-          <AnimatePresence>
-            {gameState === 'completed' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute inset-0 flex items-center justify-center"
-                style={{
-                  background: `linear-gradient(135deg, ${levelData.colors.gradient[0]}ee, ${levelData.colors.gradient[1]}ee)`,
-                  backdropFilter: 'blur(8px)'
-                }}
-              >
-                <div className="text-center">
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: 'spring', damping: 10 }}
-                    className="text-8xl mb-4"
-                  >
-                    ✨
-                  </motion.div>
-                  <motion.p
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-4xl font-bold mb-4"
-                    style={{ color: '#fff', textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
-                  >
-                    BƯỚC NHẢY!
-                  </motion.p>
-                  <motion.p
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-xl italic px-8"
-                    style={{ color: levelData.colors.secondary, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
-                  >
-                    "{collectedWords.join(' ')}"
-                  </motion.p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            {/* Completion overlay */}
+            <AnimatePresence>
+              {gameState === 'completed' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute inset-0 flex items-center justify-center z-30"
+                  style={{
+                    background: `linear-gradient(135deg, ${levelData.colors.gradient[0]}ee, ${levelData.colors.gradient[1]}ee)`,
+                    backdropFilter: 'blur(8px)'
+                  }}
+                >
+                  <div className="text-center">
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: 'spring', damping: 10 }}
+                      className="text-8xl mb-4"
+                    >
+                      ✨
+                    </motion.div>
+                    <motion.p
+                      initial={{ y: -20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-4xl font-bold mb-4"
+                      style={{ color: '#fff', textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
+                    >
+                      BƯỚC NHẢY!
+                    </motion.p>
+                    <motion.p
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-xl italic px-8"
+                      style={{ color: levelData.colors.secondary, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                    >
+                      "{collectedWords.join(' ')}"
+                    </motion.p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Controls Help */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+            className="mt-2 md:mt-4 px-4 py-2 rounded-lg flex items-center gap-4 bg-white/90 shadow border border-slate-100"
+          >
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Điều khiển:</span>
+            <div className="flex gap-1 items-center">
+              {['↑', '←', '↓', '→'].map((arrow, i) => (
+                <span
+                  key={i}
+                  className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold bg-slate-100 border border-slate-200 text-slate-700"
+                >
+                  {arrow}
+                </span>
+              ))}
+              <span className="mx-1 text-xs text-slate-400">hoặc</span>
+              {['W', 'A', 'S', 'D'].map((key, i) => (
+                <span
+                  key={i}
+                  className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold bg-slate-100 border border-slate-200 text-slate-700"
+                >
+                  {key}
+                </span>
+              ))}
+            </div>
+          </motion.div>
         </div>
 
-        {/* Instructions */}
+        {/* Column 2: Educational Details Sidebar */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 }}
-          className="absolute bottom-8 left-8 px-4 py-3 rounded-lg"
-          style={{
-            backgroundColor: 'rgba(255,255,255,0.95)',
-            border: `2px solid ${levelData.colors.text}40`,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
-          }}
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="w-72 md:w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-2 p-4 md:p-5 flex flex-col gap-3 md:gap-4 text-left z-10"
+          style={{ borderColor: levelData.colors.text + '30' }}
         >
-          <p className="text-xs font-medium mb-1" style={{ color: levelData.colors.text }}>
-            Điều khiển:
-          </p>
-          <div className="flex gap-1">
-            {['↑', '←', '↓', '→'].map((arrow, i) => (
-              <span
-                key={i}
-                className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold"
-                style={{
-                  backgroundColor: levelData.colors.primary + '20',
-                  color: levelData.colors.text,
-                  border: `1px solid ${levelData.colors.primary}40`
-                }}
-              >
-                {arrow}
+          {/* Header Image */}
+          <div className="h-28 md:h-36 lg:h-40 w-full relative overflow-hidden rounded-xl bg-slate-100 border">
+            <img src={levelData.imageUrl} alt={levelData.name} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+          </div>
+
+          {/* Title & Quote */}
+          <div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: levelData.colors.primary }}>
+                Màn {level}
               </span>
-            ))}
-            <span className="mx-1 text-xs" style={{ color: levelData.colors.text }}>hoặc</span>
-            {['W', 'A', 'S', 'D'].map((key, i) => (
-              <span
-                key={i}
-                className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold"
-                style={{
-                  backgroundColor: levelData.colors.primary + '20',
-                  color: levelData.colors.text,
-                  border: `1px solid ${levelData.colors.primary}40`
-                }}
-              >
-                {key}
-              </span>
-            ))}
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CHƯƠNG VI</span>
+            </div>
+            <h3 className="text-xl font-bold mt-2" style={{ color: levelData.colors.text }}>{levelData.name}</h3>
+            <p className="text-xs italic mt-2 border-l-2 pl-3 py-1 font-serif leading-relaxed" style={{ color: levelData.colors.text, borderColor: levelData.colors.primary }}>
+              "{levelData.quote}"
+            </p>
+          </div>
+
+          {/* Mechanic & Explanation */}
+          <div className="mt-1 pt-3 border-t border-slate-100 flex-1 flex flex-col gap-2">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Cơ chế & Ý nghĩa</h4>
+            <p className="text-xs text-slate-600 leading-relaxed font-normal">
+              {levelData.mechanicExplanation}
+            </p>
+            
+            {/* Integrated Mini-map */}
+            <div className="mt-auto pt-3 flex justify-center border-t border-slate-100/60">
+              <MiniMap
+                snake={snake}
+                orbs={orbs}
+                gridSize={GRID_SIZE}
+                color={levelData.colors.primary}
+              />
+            </div>
           </div>
         </motion.div>
       </div>
+
+      {/* Quiz Modal Overlay */}
+      <AnimatePresence>
+        {gameState === 'quiz' && currentQuestion && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: -20 }}
+              className="max-w-md w-full bg-white rounded-2xl shadow-2xl border-4 p-6 text-left flex flex-col gap-4"
+              style={{ borderColor: levelData.colors.primary }}
+            >
+              <div className="flex items-center gap-2 text-yellow-500">
+                <HelpCircle className="w-6 h-6 animate-bounce" />
+                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Câu Hỏi Nhận Thức - Màn {level}
+                </span>
+              </div>
+
+              <h3 className="text-base md:text-lg font-serif font-bold text-slate-800 leading-snug">
+                {currentQuestion.question}
+              </h3>
+
+              <div className="flex flex-col gap-2 mt-2">
+                {currentQuestion.options.map((option, idx) => {
+                  let btnBg = 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100';
+                  if (showAnswerFeedback) {
+                    if (idx === currentQuestion.correctIndex) {
+                      btnBg = 'bg-green-100 border-green-500 text-green-800 font-semibold';
+                    } else if (idx === selectedOption) {
+                      btnBg = 'bg-red-100 border-red-500 text-red-800';
+                    } else {
+                      btnBg = 'bg-slate-50 border-slate-200 text-slate-400 opacity-60';
+                    }
+                  } else if (selectedOption === idx) {
+                    btnBg = 'bg-blue-50 border-blue-500 text-blue-700 font-semibold';
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      disabled={showAnswerFeedback}
+                      onClick={() => setSelectedOption(idx)}
+                      className={`w-full text-left p-3 rounded-xl border-2 text-xs md:text-sm transition-all flex items-center gap-2 ${btnBg}`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                        {String.fromCharCode(65 + idx)}
+                      </span>
+                      <span>{option}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Feedback and Continue button */}
+              {showAnswerFeedback ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-2 flex flex-col gap-3"
+                >
+                  <div
+                    className={`p-3 rounded-lg text-xs leading-relaxed border ${
+                      isAnswerCorrect
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-red-50 border-red-200 text-red-700'
+                    }`}
+                  >
+                    <p className="font-bold mb-1">
+                      {isAnswerCorrect ? '🎉 CHÍNH XÁC!' : '❌ CHƯA ĐÚNG!'}
+                    </p>
+                    <p>{currentQuestion.explanation}</p>
+                    <p className="mt-1.5 font-semibold text-[10px] uppercase tracking-wider">
+                      {isAnswerCorrect ? 'Phần thưởng: Giảm tốc độ sâu + Tăng 10% hiểu biết!' : 'Hình phạt: Cộng thêm 5 giây vào đồng hồ!'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCloseQuiz}
+                    className="w-full py-3 bg-slate-800 text-white rounded-xl text-xs md:text-sm font-semibold hover:bg-slate-700 transition-all"
+                  >
+                    Tiếp tục hành trình
+                  </button>
+                </motion.div>
+              ) : (
+                <button
+                  disabled={selectedOption === null}
+                  onClick={handleCheckAnswer}
+                  className="w-full py-3 mt-2 text-white rounded-xl text-xs md:text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{ backgroundColor: levelData.colors.primary }}
+                >
+                  Kiểm tra đáp án
+                </button>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

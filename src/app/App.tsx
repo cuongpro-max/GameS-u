@@ -3,6 +3,8 @@ import { CoverPage } from '@/app/components/cover-page';
 import { LevelMenu } from '@/app/components/level-menu';
 import { GamePage } from '@/app/components/game-page';
 import { LevelSummary } from '@/app/components/level-summary';
+import { LibraryPage } from '@/app/components/library-page';
+import { MindMap } from '@/app/components/mind-map';
 import {
   loadProgress,
   saveProgress,
@@ -12,19 +14,13 @@ import {
   type LevelResult
 } from '@/app/utils/game-progress';
 
-type Page = 'cover' | 'menu' | 'game' | 'summary';
+type Page = 'cover' | 'menu' | 'game' | 'summary' | 'library' | 'mindmap';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('cover');
-  // Always start fresh - no localStorage persistence
-  const [progress, setProgress] = useState<GameProgress>({
-    unlockedLevels: [1],
-    levelStats: {}
-  });
+  const [progress, setProgress] = useState<GameProgress>(() => loadProgress());
   const [selectedLevel, setSelectedLevel] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
   const [lastResult, setLastResult] = useState<LevelResult | null>(null);
-
-  // Progress is not saved to localStorage - resets on each reload
 
   const handleStartGame = () => {
     setCurrentPage('menu');
@@ -42,6 +38,7 @@ export default function App() {
     let newProgress = updateLevelStats(progress, result.level, result.totalTime);
     newProgress = unlockNextLevel(newProgress, result.level);
     setProgress(newProgress);
+    saveProgress(newProgress);
 
     setCurrentPage('summary');
   };
@@ -88,7 +85,17 @@ export default function App() {
           levelStats={progress.levelStats}
           onSelectLevel={handleSelectLevel}
           onBackToCover={handleBackToCover}
+          onOpenLibrary={() => setCurrentPage('library')}
+          onOpenMindMap={() => setCurrentPage('mindmap')}
         />
+      )}
+
+      {currentPage === 'library' && (
+        <LibraryPage onBack={handleBackToMenu} />
+      )}
+
+      {currentPage === 'mindmap' && (
+        <MindMap onBack={() => setCurrentPage('menu')} />
       )}
 
       {currentPage === 'game' && (
@@ -101,14 +108,15 @@ export default function App() {
 
       {currentPage === 'summary' && lastResult && (
         <LevelSummary
-          level={lastResult.level as 1 | 2 | 3 | 4 | 5}
+          level={lastResult.level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}
           completedSentence={lastResult.sentence}
           elapsedTime={lastResult.elapsedTime}
           penaltyTime={lastResult.penaltyTime}
           isNewRecord={isNewRecord}
           onReplay={handleReplay}
-          onNextLevel={lastResult.level < 5 ? handleNextLevel : undefined}
+          onNextLevel={lastResult.level < 8 ? handleNextLevel : undefined}
           onBackToMenu={handleBackToMenu}
+          onViewMindMap={() => setCurrentPage('mindmap')}
         />
       )}
     </div>

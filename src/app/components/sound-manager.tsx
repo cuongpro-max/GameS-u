@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
+import bgMusicFile from '../../../music/_(231) Coding Stupor  (mp3cut.net).mp3';
 
 // Web Audio API based sound effects
 class SoundManager {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private bgMusic: OscillatorNode | null = null;
-  private bgMusicGain: GainNode | null = null;
+  private bgMusic: HTMLAudioElement | null = null;
+  private masterVolume: number = 0.3;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -101,28 +102,50 @@ class SoundManager {
   }
 
   startBackgroundMusic(level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) {
-    this.stopBackgroundMusic();
-    // Background music disabled as requested
+    if (typeof window === 'undefined') return;
+
+    if (!this.bgMusic) {
+      this.bgMusic = new Audio(bgMusicFile);
+      this.bgMusic.loop = true;
+    }
+
+    this.bgMusic.volume = this.masterVolume * 0.4;
+
+    const playPromise = this.bgMusic.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn("Audio play blocked, listening for user gesture:", error);
+        const playOnGesture = () => {
+          if (this.bgMusic) {
+            this.bgMusic.play().catch(e => console.error("Playback failed after gesture:", e));
+          }
+          window.removeEventListener('click', playOnGesture);
+          window.removeEventListener('keydown', playOnGesture);
+        };
+        window.addEventListener('click', playOnGesture);
+        window.addEventListener('keydown', playOnGesture);
+      });
+    }
   }
 
   stopBackgroundMusic() {
-    if ((this as any).bgMusicInterval) {
-      clearInterval((this as any).bgMusicInterval);
-      (this as any).bgMusicInterval = null;
-    }
-
-    if (this.bgMusic && this.bgMusicGain && this.audioContext) {
-      const now = this.audioContext.currentTime;
-      this.bgMusicGain.gain.linearRampToValueAtTime(0, now + 0.1);
-      this.bgMusic.stop(now + 0.1);
-      this.bgMusic = null;
-      this.bgMusicGain = null;
+    if (this.bgMusic) {
+      this.bgMusic.pause();
     }
   }
 
   setVolume(volume: number) {
+    this.masterVolume = volume;
     if (this.masterGain) {
       this.masterGain.gain.value = Math.max(0, Math.min(1, volume));
+    }
+    if (this.bgMusic) {
+      this.bgMusic.volume = Math.max(0, Math.min(1, volume * 0.4));
+      if (volume === 0) {
+        this.bgMusic.pause();
+      } else {
+        this.bgMusic.play().catch(e => console.warn("Unmute play failed:", e));
+      }
     }
   }
 }
