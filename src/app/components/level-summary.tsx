@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { CheckCircle, Clock, Trophy, RotateCcw, ArrowRight, Menu, BookOpen, GraduationCap, Share2 } from 'lucide-react';
 import { LEVEL_LESSONS, formatTime } from '../utils/game-progress';
 import level2Img from '../../../image/Level 2.png';
@@ -150,7 +150,7 @@ export function LevelSummary({
     const lesson = LEVEL_LESSONS[level];
     const [activeTab, setActiveTab] = useState<'summary' | 'keypoints'>('summary');
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
@@ -160,7 +160,7 @@ export function LevelSummary({
         }
     };
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { y: 15, opacity: 0 },
         visible: {
             y: 0,

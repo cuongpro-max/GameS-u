@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CoverPage } from '@/app/components/cover-page';
-import { LevelMenu } from '@/app/components/level-menu';
-import { GamePage } from '@/app/components/game-page';
-import { LevelSummary } from '@/app/components/level-summary';
-import { LibraryPage } from '@/app/components/library-page';
-import { MindMap } from '@/app/components/mind-map';
+import { CoverPage } from './components/cover-page';
+import { LevelMenu } from './components/level-menu';
+import { GamePage } from './components/game-page';
+import { LevelSummary } from './components/level-summary';
+import { LibraryPage } from './components/library-page';
+import { MindMap } from './components/mind-map';
 import {
   loadProgress,
   saveProgress,
@@ -12,7 +12,7 @@ import {
   updateLevelStats,
   type GameProgress,
   type LevelResult
-} from '@/app/utils/game-progress';
+} from './utils/game-progress';
 
 type Page = 'cover' | 'menu' | 'game' | 'summary' | 'library' | 'mindmap';
 
