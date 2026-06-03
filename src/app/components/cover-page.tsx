@@ -11,13 +11,7 @@ export function CoverPage({ onStart }: CoverPageProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full min-h-screen bg-[#e8e4db] flex flex-col items-center justify-center relative overflow-y-auto py-8 px-4"
-      style={{
-        backgroundImage: `
-          repeating-linear-gradient(0deg, transparent, transparent 29px, #d4cfc2 29px, #d4cfc2 31px),
-          repeating-linear-gradient(90deg, transparent, transparent 29px, #d4cfc2 29px, #d4cfc2 31px)
-        `
-      }}
+      className="w-full min-h-screen bg-gradient-to-b from-[#FFEFBA] to-[#FFFFFF] flex flex-col items-center justify-center relative overflow-y-auto py-8 px-4"
     >
       {/* Decorative corners */}
       <div className="absolute top-4 left-4 w-12 h-12 md:top-8 md:left-8 md:w-16 md:h-16 border-l-2 border-t-2 border-[#7a6f5d]" />

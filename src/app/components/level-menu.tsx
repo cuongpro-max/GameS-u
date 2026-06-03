@@ -100,7 +100,7 @@ export function LevelMenu({
     const isLevel8Completed = levelStats[8] && levelStats[8].completedCount > 0;
 
     return (
-        <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+        <div className="w-full min-h-screen bg-gradient-to-tr from-sky-100 via-indigo-50 to-purple-100 p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <motion.div
