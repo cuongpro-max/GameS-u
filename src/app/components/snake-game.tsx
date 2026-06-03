@@ -378,19 +378,24 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   // Mobile and responsive states
   const [boardScale, setBoardScale] = useState<number>(1);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    setIsTouchDevice(isTouch);
 
     const updateScale = () => {
-      const boardWidth = GRID_SIZE * CELL_SIZE; // 560
-      const availableWidth = window.innerWidth - 32; // 16px padding on each side
-      if (availableWidth < boardWidth) {
-        setBoardScale(availableWidth / boardWidth);
-      } else {
-        setBoardScale(1);
-      }
+      const boardWidth = GRID_SIZE * CELL_SIZE; // e.g. 560
+      // On mobile, reserve space for: status bar ~48px, sentence progress ~36px, d-pad ~120px, gap ~16px
+      const reservedHeight = isTouch ? 220 : 80;
+      const availableWidth = window.innerWidth - 24; // 12px padding on each side
+      const availableHeight = window.innerHeight - reservedHeight;
+      const scaleByWidth = availableWidth < boardWidth ? availableWidth / boardWidth : 1;
+      const scaleByHeight = availableHeight < boardWidth ? availableHeight / boardWidth : 1;
+      const scale = Math.min(scaleByWidth, scaleByHeight, 1);
+      setBoardScale(scale);
     };
     updateScale();
     window.addEventListener('resize', updateScale);
@@ -1219,7 +1224,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
   return (
     <div
-      className="w-full h-full relative flex flex-col"
+      className="w-full h-full relative flex flex-col overflow-hidden select-none touch-none"
       style={{
         backgroundColor: levelData.colors.background,
         backgroundImage: `
@@ -1232,9 +1237,9 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
       <ComboSystem combo={combo} show={showCombo} color={levelData.colors.primary} />
 
-      {/* Status Bar */}
+      {/* Status Bar - Compact on mobile */}
       <div
-        className="px-4 py-2 md:px-6 md:py-4 border-b-2 flex flex-col sm:flex-row gap-3 items-center justify-between relative overflow-hidden"
+        className="px-2 py-1 sm:px-3 sm:py-1.5 md:px-6 md:py-3 border-b flex flex-row items-center justify-between relative overflow-hidden flex-shrink-0"
         style={{
           backgroundColor: levelData.colors.secondary,
           borderColor: levelData.colors.text
@@ -1242,9 +1247,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
       >
         {/* Animated background */}
         <motion.div
-          animate={{
-            backgroundPosition: ['0% 0%', '100% 100%']
-          }}
+          animate={{ backgroundPosition: ['0% 0%', '100% 100%'] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
           className="absolute inset-0 opacity-5"
           style={{
@@ -1253,111 +1256,165 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           }}
         />
 
-        <div className="relative z-10 text-center sm:text-left">
-          <h2 className="text-lg sm:text-2xl font-serif mb-0.5 sm:mb-1" style={{ color: levelData.colors.text }}>
-            BẢN ĐỒ NHẬN THỨC - LEVEL {level}
+        {/* Level Info */}
+        <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
+          <span
+            className="text-[9px] sm:text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-white"
+            style={{ backgroundColor: levelData.colors.primary }}
+          >
+            Màn {level}
+          </span>
+          <h2 className="hidden sm:block text-xs md:text-sm font-serif font-bold" style={{ color: levelData.colors.text }}>
+            - {levelData.name}
           </h2>
-          <p className="text-xs italic" style={{ color: levelData.colors.text, opacity: 0.7 }}>
-            {levelData.name}
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 relative z-10">
+        {/* Stats & Controls Row */}
+        <div className="flex items-center gap-2 sm:gap-4 relative z-10">
           {/* Timer Display */}
-          <div className="text-center sm:text-right">
-            <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: levelData.colors.text }}>
-              Thời gian
-            </p>
-            <motion.p
-              className="text-xl sm:text-3xl font-bold tabular-nums"
-              style={{ color: levelData.colors.text }}
-            >
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <span className="text-[10px]" title="Thời gian">⏰</span>
+            <span className="text-xs font-bold tabular-nums" style={{ color: levelData.colors.text }}>
               {Math.floor((elapsedTime + penaltyTime) / 60)}:{String((elapsedTime + penaltyTime) % 60).padStart(2, '0')}
-            </motion.p>
+            </span>
             {penaltyTime > 0 && (
-              <p className="text-[10px] text-red-600 font-medium mt-0.5">
-                +{penaltyTime}s phạt
-              </p>
+              <span className="text-[8px] text-red-600 font-bold">+{penaltyTime}s</span>
             )}
           </div>
 
-          {/* Quit Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onQuit}
-            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all border-2"
-            style={{
-              borderColor: levelData.colors.text,
-              color: levelData.colors.text
-            }}
-          >
-            Menu
-          </motion.button>
-
-          {/* Sound toggle */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-1.5 sm:p-2 rounded-full transition-all"
-            style={{
-              backgroundColor: soundEnabled ? levelData.colors.primary : '#ccc',
-              color: '#fff'
-            }}
-          >
-            {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />}
-          </motion.button>
-
-          <div className="text-center sm:text-right">
-            <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: levelData.colors.text }}>
-              Mức độ thấu hiểu
-            </p>
-            <motion.p
-              key={understanding}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              className="text-xl sm:text-3xl font-bold"
-              style={{ color: levelData.colors.primary }}
-            >
+          {/* Understanding Display */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <span className="text-[10px]" title="Thấu hiểu">💡</span>
+            <span className="text-xs font-bold" style={{ color: levelData.colors.primary }}>
               {understanding}%
-            </motion.p>
+            </span>
+          </div>
+
+          {/* Progress Toggle (mobile) */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowProgress(p => !p)}
+            className="px-1.5 py-0.5 rounded text-[9px] font-semibold border lg:hidden"
+            style={{
+              backgroundColor: showProgress ? levelData.colors.primary : 'rgba(255,255,255,0.3)',
+              borderColor: levelData.colors.text,
+              color: showProgress ? '#fff' : levelData.colors.text
+            }}
+          >
+            {showProgress ? 'Ẩn' : 'Mục tiêu'}
+          </motion.button>
+
+          <div className="flex items-center gap-1">
+            {/* Info toggle (Mobile only) */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowInfoModal(true)}
+              className="p-1 rounded-full transition-all border lg:hidden"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                borderColor: levelData.colors.text,
+                color: levelData.colors.text
+              }}
+            >
+              <HelpCircle className="w-3 h-3" />
+            </motion.button>
+
+            {/* Sound toggle */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="p-1 rounded-full transition-all border"
+              style={{
+                backgroundColor: soundEnabled ? levelData.colors.primary : 'rgba(255, 255, 255, 0.3)',
+                borderColor: levelData.colors.text,
+                color: soundEnabled ? '#fff' : levelData.colors.text
+              }}
+            >
+              {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+            </motion.button>
+
+            {/* Quit Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onQuit}
+              className="px-2 py-0.5 rounded font-semibold text-[9px] sm:text-xs transition-all border"
+              style={{
+                borderColor: levelData.colors.text,
+                color: levelData.colors.text,
+                backgroundColor: 'rgba(255, 255, 255, 0.3)'
+              }}
+            >
+              Menu
+            </motion.button>
           </div>
         </div>
       </div>
 
-      {/* Sentence Progress */}
+      {/* Sentence Progress - Collapsible on mobile, always shown on desktop */}
+      <AnimatePresence>
+        {(showProgress || false) && (
+          <motion.div
+            key="progress-mobile"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden border-b flex-shrink-0 overflow-hidden"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.5)',
+              borderColor: levelData.colors.text + '40'
+            }}
+          >
+            <div className="px-3 py-1.5 flex flex-wrap gap-1 items-center">
+              <span className="text-[10px] font-semibold" style={{ color: levelData.colors.text }}>Mục tiêu:</span>
+              {levelData.sentence.map((word, index) => (
+                <motion.span
+                  key={index}
+                  initial={false}
+                  animate={{
+                    backgroundColor: index < collectedWords.length ? levelData.colors.text : 'transparent',
+                    scale: index === collectedWords.length - 1 ? [1, 1.1, 1] : 1
+                  }}
+                  transition={{ scale: { duration: 0.3 } }}
+                  className="px-1.5 py-0.5 rounded transition-all text-[10px]"
+                  style={{
+                    color: index < collectedWords.length ? '#fff' : levelData.colors.text + '60',
+                    border: `1.2px ${index < collectedWords.length ? 'solid' : 'dashed'} ${levelData.colors.text}${index < collectedWords.length ? '' : '40'}`,
+                    fontWeight: index < collectedWords.length ? 600 : 400
+                  }}
+                >
+                  {index < collectedWords.length ? word : '......'}
+                </motion.span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sentence Progress - Always visible on desktop */}
       <div
-        className="px-4 py-2 border-b flex flex-wrap gap-1.5 items-center min-h-[40px] text-xs sm:text-sm"
+        className="hidden lg:flex px-3 py-1 border-b flex-wrap gap-1 items-center min-h-[32px] text-[10px] sm:text-xs flex-shrink-0"
         style={{
           backgroundColor: 'rgba(255,255,255,0.5)',
           borderColor: levelData.colors.text + '40'
         }}
       >
-        <span className="text-sm font-medium" style={{ color: levelData.colors.text }}>
-          Mục tiêu:
-        </span>
+        <span className="text-xs font-medium" style={{ color: levelData.colors.text }}>Mục tiêu:</span>
         {levelData.sentence.map((word, index) => (
           <motion.span
             key={index}
             initial={false}
             animate={{
-              backgroundColor: index < collectedWords.length
-                ? levelData.colors.text
-                : 'transparent',
+              backgroundColor: index < collectedWords.length ? levelData.colors.text : 'transparent',
               scale: index === collectedWords.length - 1 ? [1, 1.1, 1] : 1
             }}
             transition={{ scale: { duration: 0.3 } }}
-            className="px-2 py-0.5 rounded transition-all text-xs sm:text-sm"
+            className="px-1.5 py-0.5 rounded transition-all text-[10px] sm:text-xs"
             style={{
-              color: index < collectedWords.length
-                ? '#fff'
-                : levelData.colors.text + '60',
-              border: `1.5px ${index < collectedWords.length ? 'solid' : 'dashed'} ${levelData.colors.text}${index < collectedWords.length ? '' : '40'}`,
+              color: index < collectedWords.length ? '#fff' : levelData.colors.text + '60',
+              border: `1.2px ${index < collectedWords.length ? 'solid' : 'dashed'} ${levelData.colors.text}${index < collectedWords.length ? '' : '40'}`,
               fontWeight: index < collectedWords.length ? 600 : 400,
-              boxShadow: index < collectedWords.length
-                ? `0 2px 8px ${levelData.colors.primary}40`
-                : 'none'
+              boxShadow: index < collectedWords.length ? `0 2px 6px ${levelData.colors.primary}30` : 'none'
             }}
           >
             {index < collectedWords.length ? word : '......'}
@@ -1368,36 +1425,33 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
       {/* Level 3: Accumulation Progress Indicator */}
       {level === 3 && levelData.requiresAccumulation && accumulationOrbs < (levelData.accumulationCount || 10) && (
         <div
-          className="px-4 py-2 md:px-6 border-b flex items-center gap-3 text-xs sm:text-sm"
+          className="px-3 py-1 md:px-6 border-b flex items-center gap-2 text-xs flex-shrink-0"
           style={{
             backgroundColor: levelData.colors.primary + '20',
             borderColor: levelData.colors.text + '40'
           }}
         >
-          <span className="font-medium" style={{ color: levelData.colors.text }}>
-            Tích lũy:
-          </span>
-          <div className="flex gap-1">
+          <span className="font-medium text-[10px]" style={{ color: levelData.colors.text }}>Tích lũy:</span>
+          <div className="flex gap-0.5">
             {Array.from({ length: levelData.accumulationCount || 10 }).map((_, i) => (
               <div
                 key={i}
-                className="w-2.5 h-2.5 rounded-full border transition-all"
+                className="w-2 h-2 rounded-full border transition-all"
                 style={{
                   backgroundColor: i < accumulationOrbs ? levelData.colors.primary : 'transparent',
-                  borderColor: levelData.colors.text + '60',
-                  transform: i < accumulationOrbs ? 'scale(1.1)' : 'scale(1)'
+                  borderColor: levelData.colors.text + '60'
                 }}
               />
             ))}
           </div>
-          <span className="text-xs ml-2" style={{ color: levelData.colors.text + 'cc' }}>
+          <span className="text-[10px]" style={{ color: levelData.colors.text + 'cc' }}>
             {accumulationOrbs}/{levelData.accumulationCount || 10}
           </span>
         </div>
       )}
 
       {/* Game Arena */}
-      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 md:gap-8 p-4 md:p-6 lg:p-8 relative overflow-y-auto lg:overflow-hidden select-none">
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-start lg:justify-center gap-2 lg:gap-8 p-2 sm:p-3 lg:p-8 relative overflow-hidden select-none min-h-0">
         {/* Level 4: Split zones (red/blue) */}
         {level === 4 && levelData.hasZones && (
           <div className="absolute inset-0 flex pointer-events-none">
@@ -1416,10 +1470,10 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           </div>
         )}
 
-        {/* Column 1: Playing Board */}
-        <div className="flex flex-col items-center">
+        {/* Column 1: Playing Board + D-pad stacked for mobile */}
+        <div className="flex flex-col items-center flex-shrink-0 w-full lg:w-auto gap-2">
           <div
-            className="relative overflow-hidden rounded-3xl"
+            className="relative overflow-hidden rounded-3xl flex-shrink-0"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             style={{
@@ -1719,123 +1773,101 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           </div>
         </div>
 
-        {/* Virtual D-pad for mobile */}
-        {isTouchDevice && (
-          <div className="flex flex-col items-center gap-1 mt-4 no-print select-none">
-            {/* UP button */}
-            <div className="flex justify-center">
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                onClick={() => {
-                  if (directionRef.current !== 'DOWN') {
-                    setDirection('UP');
-                    directionRef.current = 'UP';
-                  }
-                }}
-                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
-                style={{
-                  backgroundColor: levelData.colors.primary,
-                  borderColor: levelData.colors.text,
-                  color: '#fff'
-                }}
-              >
-                ▲
-              </motion.button>
+          {/* Virtual D-pad for mobile - inside the board column so it stacks properly */}
+          {isTouchDevice && (
+            <div className="flex flex-col items-center gap-1 select-none flex-shrink-0">
+              {/* UP button */}
+              <div className="flex justify-center">
+                <motion.button
+                  whileTap={{ scale: 0.82 }}
+                  onClick={() => {
+                    if (directionRef.current !== 'DOWN') {
+                      setDirection('UP');
+                      directionRef.current = 'UP';
+                    }
+                  }}
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl border-2 shadow-lg text-lg font-bold active:opacity-80"
+                  style={{ backgroundColor: levelData.colors.primary, borderColor: levelData.colors.text, color: '#fff' }}
+                >
+                  ▲
+                </motion.button>
+              </div>
+              {/* LEFT, DOWN, RIGHT buttons */}
+              <div className="flex gap-3 items-center">
+                <motion.button
+                  whileTap={{ scale: 0.82 }}
+                  onClick={() => {
+                    if (directionRef.current !== 'RIGHT') {
+                      setDirection('LEFT');
+                      directionRef.current = 'LEFT';
+                    }
+                  }}
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl border-2 shadow-lg text-lg font-bold active:opacity-80"
+                  style={{ backgroundColor: levelData.colors.primary, borderColor: levelData.colors.text, color: '#fff' }}
+                >
+                  ◀
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.82 }}
+                  onClick={() => {
+                    if (directionRef.current !== 'UP') {
+                      setDirection('DOWN');
+                      directionRef.current = 'DOWN';
+                    }
+                  }}
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl border-2 shadow-lg text-lg font-bold active:opacity-80"
+                  style={{ backgroundColor: levelData.colors.primary, borderColor: levelData.colors.text, color: '#fff' }}
+                >
+                  ▼
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.82 }}
+                  onClick={() => {
+                    if (directionRef.current !== 'LEFT') {
+                      setDirection('RIGHT');
+                      directionRef.current = 'RIGHT';
+                    }
+                  }}
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl border-2 shadow-lg text-lg font-bold active:opacity-80"
+                  style={{ backgroundColor: levelData.colors.primary, borderColor: levelData.colors.text, color: '#fff' }}
+                >
+                  ▶
+                </motion.button>
+              </div>
             </div>
-            {/* LEFT, DOWN, RIGHT buttons */}
-            <div className="flex gap-4 items-center">
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                onClick={() => {
-                  if (directionRef.current !== 'RIGHT') {
-                    setDirection('LEFT');
-                    directionRef.current = 'LEFT';
-                  }
-                }}
-                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
-                style={{
-                  backgroundColor: levelData.colors.primary,
-                  borderColor: levelData.colors.text,
-                  color: '#fff'
-                }}
-              >
-                ◀
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                onClick={() => {
-                  if (directionRef.current !== 'UP') {
-                    setDirection('DOWN');
-                    directionRef.current = 'DOWN';
-                  }
-                }}
-                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
-                style={{
-                  backgroundColor: levelData.colors.primary,
-                  borderColor: levelData.colors.text,
-                  color: '#fff'
-                }}
-              >
-                ▼
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                onClick={() => {
-                  if (directionRef.current !== 'LEFT') {
-                    setDirection('RIGHT');
-                    directionRef.current = 'RIGHT';
-                  }
-                }}
-                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
-                style={{
-                  backgroundColor: levelData.colors.primary,
-                  borderColor: levelData.colors.text,
-                  color: '#fff'
-                }}
-              >
-                ▶
-              </motion.button>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Controls Help */}
-        {!isTouchDevice && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="mt-2 md:mt-4 px-4 py-2 rounded-lg flex items-center gap-4 bg-white/90 shadow border border-slate-100"
-          >
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Điều khiển:</span>
-            <div className="flex gap-1 items-center">
-              {['↑', '←', '↓', '→'].map((arrow, i) => (
-                <span
-                  key={i}
-                  className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold bg-slate-100 border border-slate-200 text-slate-700"
-                >
-                  {arrow}
-                </span>
-              ))}
-              <span className="mx-1 text-xs text-slate-400">hoặc</span>
-              {['W', 'A', 'S', 'D'].map((key, i) => (
-                <span
-                  key={i}
-                  className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold bg-slate-100 border border-slate-200 text-slate-700"
-                >
-                  {key}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </div>
+          {/* Controls Help (desktop only) */}
+          {!isTouchDevice && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1 }}
+              className="px-4 py-2 rounded-lg flex items-center gap-4 bg-white/90 shadow border border-slate-100"
+            >
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Điều khiển:</span>
+              <div className="flex gap-1 items-center">
+                {['↑', '←', '↓', '→'].map((arrow, i) => (
+                  <span key={i} className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold bg-slate-100 border border-slate-200 text-slate-700">
+                    {arrow}
+                  </span>
+                ))}
+                <span className="mx-1 text-xs text-slate-400">hoặc</span>
+                {['W', 'A', 'S', 'D'].map((key, i) => (
+                  <span key={i} className="w-6 h-6 flex items-center justify-center rounded text-xs font-bold bg-slate-100 border border-slate-200 text-slate-700">
+                    {key}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </div>
 
         {/* Column 2: Educational Details Sidebar */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-72 md:w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-2 p-4 md:p-5 flex flex-col gap-3 md:gap-4 text-left z-10"
+          className="hidden lg:flex w-full max-w-sm lg:w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-2 p-4 md:p-5 flex-col gap-3 md:gap-4 text-left z-10 flex-shrink-0"
           style={{ borderColor: levelData.colors.text + '30' }}
         >
           {/* Header Image */}
@@ -1975,6 +2007,73 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
                   Kiểm tra đáp án
                 </button>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Educational Details Modal (Mobile Only) */}
+      <AnimatePresence>
+        {showInfoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-40 p-4 touch-none"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: -20 }}
+              className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border-2 p-5 flex flex-col gap-4 text-left max-h-[90vh] overflow-y-auto"
+              style={{ borderColor: levelData.colors.primary }}
+            >
+              {/* Header Image */}
+              <div className="h-36 w-full relative overflow-hidden rounded-xl bg-slate-100 border">
+                <img src={levelData.imageUrl} alt={levelData.name} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+              </div>
+
+              {/* Title & Quote */}
+              <div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: levelData.colors.primary }}>
+                    Màn {level}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CHƯƠNG VI</span>
+                </div>
+                <h3 className="text-xl font-bold mt-2" style={{ color: levelData.colors.text }}>{levelData.name}</h3>
+                <p className="text-xs italic mt-2 border-l-2 pl-3 py-1 font-serif leading-relaxed" style={{ color: levelData.colors.text, borderColor: levelData.colors.primary }}>
+                  "{levelData.quote}"
+                </p>
+              </div>
+
+              {/* Mechanic & Explanation */}
+              <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-sans">Cơ chế & Ý nghĩa</h4>
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  {levelData.mechanicExplanation}
+                </p>
+                
+                {/* Integrated Mini-map */}
+                <div className="pt-3 flex justify-center border-t border-slate-100/60">
+                  <MiniMap
+                    snake={snake}
+                    orbs={orbs}
+                    gridSize={GRID_SIZE}
+                    color={levelData.colors.primary}
+                  />
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="w-full py-2.5 rounded-xl text-white font-semibold text-xs transition-all mt-2"
+                style={{ backgroundColor: levelData.colors.primary }}
+              >
+                Đóng
+              </button>
             </motion.div>
           </motion.div>
         )}
