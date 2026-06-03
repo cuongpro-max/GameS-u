@@ -32,11 +32,11 @@ export function CoverPage({ onStart }: CoverPageProps) {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif mb-2 leading-tight" style={{ color: '#3d3529' }}>
+          <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-serif mb-2 leading-tight px-2" style={{ color: '#3d3529' }}>
             Vấn đề dân tộc và tôn giáo trong thời kỳ quá độ lên chủ nghĩa xã hội
           </h1>
-          <div className="h-px bg-[#7a6f5d] w-36 md:w-48 mx-auto my-3" />
-          <p className="text-lg md:text-xl italic font-serif" style={{ color: '#5a5244' }}>
+          <div className="h-px bg-[#7a6f5d] w-24 md:w-48 mx-auto my-3" />
+          <p className="text-base sm:text-lg md:text-xl italic font-serif" style={{ color: '#5a5244' }}>
             Hành Trình Qua Không Gian Triết Học
           </p>
         </motion.div>
@@ -46,7 +46,7 @@ export function CoverPage({ onStart }: CoverPageProps) {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="relative w-full h-40 md:h-52 lg:h-64 rounded-lg overflow-hidden shadow-2xl border-4 border-[#7a6f5d]"
+          className="relative w-full h-36 sm:h-48 md:h-52 lg:h-64 rounded-lg overflow-hidden shadow-2xl border-4 border-[#7a6f5d]"
         >
           <img
             src={coverImg}

@@ -403,12 +403,12 @@ export function LevelSummary({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="p-4 flex gap-3 justify-center flex-wrap">
+                <div className="p-4 flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={onReplay}
-                        className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 border-2 transition-colors"
+                        className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 border-2 transition-colors w-full sm:w-auto"
                         style={{
                             borderColor: colors.primary,
                             color: colors.primary
@@ -423,7 +423,7 @@ export function LevelSummary({
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={onNextLevel}
-                            className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 text-white transition-colors"
+                            className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 text-white transition-colors w-full sm:w-auto"
                             style={{ backgroundColor: colors.primary }}
                         >
                             Màn tiếp theo
@@ -436,7 +436,7 @@ export function LevelSummary({
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={onViewMindMap}
-                            className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 text-white transition-colors shadow-md"
+                            className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 text-white transition-colors shadow-md w-full sm:w-auto"
                             style={{ backgroundColor: '#b8860b' }}
                         >
                             Xem Bản Đồ Tư Duy
@@ -448,7 +448,7 @@ export function LevelSummary({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={onBackToMenu}
-                        className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 bg-gray-200 text-gray-700 transition-colors hover:bg-gray-300"
+                        className="px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 bg-gray-200 text-gray-700 transition-colors hover:bg-gray-300 w-full sm:w-auto"
                     >
                         <Menu className="w-4 h-4" />
                         Menu

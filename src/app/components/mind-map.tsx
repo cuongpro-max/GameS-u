@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Download, ZoomIn, ZoomOut, Maximize2, Check, BookOpen, Landmark, HelpCircle, Award } from 'lucide-react';
 import { LEVEL_LESSONS } from '../utils/game-progress';
@@ -200,7 +200,45 @@ const CONNECTIONS = [
 export function MindMap({ onBack }: MindMapProps) {
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
   const [zoom, setZoom] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
   const printAreaRef = useRef<HTMLDivElement>(null);
+
+  // Auto zoom on mobile viewports on mount/resize
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 1024;
+      if (isMobile) {
+        const calculatedZoom = Math.max(0.25, Math.min(1, (window.innerWidth - 32) / 1300));
+        setZoom(calculatedZoom);
+      } else {
+        setZoom(1);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const newX = e.clientX - dragStart.current.x;
+    const newY = e.clientY - dragStart.current.y;
+    setPanOffset({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
 
   const getAnchorPoints = (nodeId: string) => {
     const node = NODES.find(n => n.id === nodeId);
@@ -274,8 +312,16 @@ export function MindMap({ onBack }: MindMapProps) {
 
   const handleZoom = (type: 'in' | 'out' | 'reset') => {
     if (type === 'in') setZoom(prev => Math.min(1.4, prev + 0.1));
-    else if (type === 'out') setZoom(prev => Math.max(0.6, prev - 0.1));
-    else setZoom(1);
+    else if (type === 'out') setZoom(prev => Math.max(0.2, prev - 0.1));
+    else {
+      const isMobile = window.innerWidth < 1024;
+      if (isMobile) {
+        setZoom(Math.max(0.25, Math.min(1, (window.innerWidth - 32) / 1300)));
+      } else {
+        setZoom(1);
+      }
+      setPanOffset({ x: 0, y: 0 });
+    }
   };
 
   const handlePrint = () => {
@@ -318,17 +364,17 @@ export function MindMap({ onBack }: MindMapProps) {
       <div className="absolute bottom-4 right-4 w-12 h-12 md:bottom-8 md:right-8 md:w-16 md:h-16 border-r-2 border-b-2 border-[#7a6f5d] pointer-events-none no-print" />
 
       {/* Header */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b-2 border-[#7a6f5d] pb-4 mb-4 relative z-20 no-print">
+      <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-[#7a6f5d] pb-4 mb-4 relative z-20 no-print">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[#5a5244] hover:text-[#3d3529] hover:bg-[#d4cfc2]/30 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[#5a5244] hover:text-[#3d3529] hover:bg-[#d4cfc2]/30 transition-all self-start md:self-auto"
         >
           <ArrowLeft className="w-5 h-5" />
           Menu chính
         </button>
 
         <div className="text-center">
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#3d3529]">
+          <h1 className="text-xl md:text-3xl font-serif font-bold text-[#3d3529]">
             BẢN ĐỒ TƯ DUY TỔNG KẾT
           </h1>
           <p className="text-xs uppercase tracking-widest text-[#7a6f5d] font-bold mt-1">
@@ -336,10 +382,10 @@ export function MindMap({ onBack }: MindMapProps) {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full md:w-auto">
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-[#b8860b] hover:bg-[#966d03] transition-all shadow-md"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-[#b8860b] hover:bg-[#966d03] transition-all shadow-md w-full md:w-auto"
           >
             <Download className="w-4 h-4" />
             In / Lưu PDF
@@ -376,15 +422,20 @@ export function MindMap({ onBack }: MindMapProps) {
       </div>
 
       {/* Map Interactive Canvas */}
-      <div className="flex-1 w-full overflow-auto flex items-center justify-center relative p-4 select-none">
+      <div 
+        className="flex-1 w-full overflow-hidden flex items-center justify-center relative p-4 select-none cursor-grab active:cursor-grabbing touch-none"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
         <div
           id="print-section"
           ref={printAreaRef}
-          className="relative transition-transform duration-100 ease-out border-2 border-[#7a6f5d]/30 rounded-3xl bg-[#f5f2eb]/90 shadow-inner"
+          className="relative transition-transform duration-75 ease-out border-2 border-[#7a6f5d]/30 rounded-3xl bg-[#f5f2eb]/90 shadow-inner"
           style={{
             width: '1300px',
             height: '750px',
-            transform: `scale(${zoom})`,
+            transform: `scale(${zoom}) translate(${panOffset.x}px, ${panOffset.y}px)`,
             transformOrigin: 'center center',
             backgroundImage: `
               repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(122,111,93,0.02) 29px, rgba(122,111,93,0.02) 31px),

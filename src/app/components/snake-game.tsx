@@ -375,6 +375,67 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastMoveTime, setLastMoveTime] = useState(0);
 
+  // Mobile and responsive states
+  const [boardScale, setBoardScale] = useState<number>(1);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+    const updateScale = () => {
+      const boardWidth = GRID_SIZE * CELL_SIZE; // 560
+      const availableWidth = window.innerWidth - 32; // 16px padding on each side
+      if (availableWidth < boardWidth) {
+        setBoardScale(availableWidth / boardWidth);
+      } else {
+        setBoardScale(1);
+      }
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    const threshold = 30; // minimum movement in pixels
+
+    if (Math.max(absDx, absDy) < threshold) return;
+
+    const currentDir = directionRef.current;
+
+    if (absDx > absDy) {
+      if (dx > 0 && currentDir !== 'LEFT') {
+        setDirection('RIGHT');
+        directionRef.current = 'RIGHT';
+      } else if (dx < 0 && currentDir !== 'RIGHT') {
+        setDirection('LEFT');
+        directionRef.current = 'LEFT';
+      }
+    } else {
+      if (dy > 0 && currentDir !== 'UP') {
+        setDirection('DOWN');
+        directionRef.current = 'DOWN';
+      } else if (dy < 0 && currentDir !== 'DOWN') {
+        setDirection('UP');
+        directionRef.current = 'UP';
+      }
+    }
+  };
+
   // New state for advanced mechanics
   const [obstacles, setObstacles] = useState<Position[]>([]); // Level 8 patrol obstacles
   const [accumulationOrbs, setAccumulationOrbs] = useState(0);
@@ -1173,7 +1234,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
       {/* Status Bar */}
       <div
-        className="px-6 py-3 md:py-4 border-b-2 flex items-center justify-between relative overflow-hidden"
+        className="px-4 py-2 md:px-6 md:py-4 border-b-2 flex flex-col sm:flex-row gap-3 items-center justify-between relative overflow-hidden"
         style={{
           backgroundColor: levelData.colors.secondary,
           borderColor: levelData.colors.text
@@ -1192,29 +1253,29 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           }}
         />
 
-        <div className="relative z-10">
-          <h2 className="text-2xl font-serif mb-1" style={{ color: levelData.colors.text }}>
+        <div className="relative z-10 text-center sm:text-left">
+          <h2 className="text-lg sm:text-2xl font-serif mb-0.5 sm:mb-1" style={{ color: levelData.colors.text }}>
             BẢN ĐỒ NHẬN THỨC - LEVEL {level}
           </h2>
-          <p className="text-sm italic" style={{ color: levelData.colors.text, opacity: 0.7 }}>
+          <p className="text-xs italic" style={{ color: levelData.colors.text, opacity: 0.7 }}>
             {levelData.name}
           </p>
         </div>
 
-        <div className="flex items-center gap-6 relative z-10">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 relative z-10">
           {/* Timer Display */}
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: levelData.colors.text }}>
+          <div className="text-center sm:text-right">
+            <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: levelData.colors.text }}>
               Thời gian
             </p>
             <motion.p
-              className="text-3xl font-bold tabular-nums"
+              className="text-xl sm:text-3xl font-bold tabular-nums"
               style={{ color: levelData.colors.text }}
             >
               {Math.floor((elapsedTime + penaltyTime) / 60)}:{String((elapsedTime + penaltyTime) % 60).padStart(2, '0')}
             </motion.p>
             {penaltyTime > 0 && (
-              <p className="text-xs text-red-600 font-medium mt-1">
+              <p className="text-[10px] text-red-600 font-medium mt-0.5">
                 +{penaltyTime}s phạt
               </p>
             )}
@@ -1225,7 +1286,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={onQuit}
-            className="px-4 py-2 rounded-lg font-semibold text-sm transition-all border-2"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all border-2"
             style={{
               borderColor: levelData.colors.text,
               color: levelData.colors.text
@@ -1239,24 +1300,24 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2 rounded-full transition-all"
+            className="p-1.5 sm:p-2 rounded-full transition-all"
             style={{
               backgroundColor: soundEnabled ? levelData.colors.primary : '#ccc',
               color: '#fff'
             }}
           >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />}
           </motion.button>
 
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: levelData.colors.text }}>
+          <div className="text-center sm:text-right">
+            <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: levelData.colors.text }}>
               Mức độ thấu hiểu
             </p>
             <motion.p
               key={understanding}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="text-3xl font-bold"
+              className="text-xl sm:text-3xl font-bold"
               style={{ color: levelData.colors.primary }}
             >
               {understanding}%
@@ -1267,7 +1328,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
       {/* Sentence Progress */}
       <div
-        className="px-6 py-2 md:py-3 border-b flex flex-wrap gap-2 items-center min-h-[50px]"
+        className="px-4 py-2 border-b flex flex-wrap gap-1.5 items-center min-h-[40px] text-xs sm:text-sm"
         style={{
           backgroundColor: 'rgba(255,255,255,0.5)',
           borderColor: levelData.colors.text + '40'
@@ -1287,7 +1348,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               scale: index === collectedWords.length - 1 ? [1, 1.1, 1] : 1
             }}
             transition={{ scale: { duration: 0.3 } }}
-            className="px-3 py-1 rounded transition-all"
+            className="px-2 py-0.5 rounded transition-all text-xs sm:text-sm"
             style={{
               color: index < collectedWords.length
                 ? '#fff'
@@ -1307,20 +1368,20 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
       {/* Level 3: Accumulation Progress Indicator */}
       {level === 3 && levelData.requiresAccumulation && accumulationOrbs < (levelData.accumulationCount || 10) && (
         <div
-          className="px-8 py-3 border-b flex items-center gap-3"
+          className="px-4 py-2 md:px-6 border-b flex items-center gap-3 text-xs sm:text-sm"
           style={{
             backgroundColor: levelData.colors.primary + '20',
             borderColor: levelData.colors.text + '40'
           }}
         >
-          <span className="text-sm font-medium" style={{ color: levelData.colors.text }}>
+          <span className="font-medium" style={{ color: levelData.colors.text }}>
             Tích lũy:
           </span>
           <div className="flex gap-1">
             {Array.from({ length: levelData.accumulationCount || 10 }).map((_, i) => (
               <div
                 key={i}
-                className="w-3 h-3 rounded-full border transition-all"
+                className="w-2.5 h-2.5 rounded-full border transition-all"
                 style={{
                   backgroundColor: i < accumulationOrbs ? levelData.colors.primary : 'transparent',
                   borderColor: levelData.colors.text + '60',
@@ -1336,7 +1397,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
       )}
 
       {/* Game Arena */}
-      <div className="flex-1 flex items-center justify-center gap-4 md:gap-8 p-4 md:p-6 lg:p-8 relative overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 md:gap-8 p-4 md:p-6 lg:p-8 relative overflow-y-auto lg:overflow-hidden select-none">
         {/* Level 4: Split zones (red/blue) */}
         {level === 4 && levelData.hasZones && (
           <div className="absolute inset-0 flex pointer-events-none">
@@ -1356,22 +1417,33 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         )}
 
         {/* Column 1: Playing Board */}
-        <div className="relative">
+        <div className="flex flex-col items-center">
           <div
-            className="relative"
+            className="relative overflow-hidden rounded-3xl"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             style={{
-              width: `${GRID_SIZE * CELL_SIZE}px`,
-              height: `${GRID_SIZE * CELL_SIZE}px`,
-              border: `3px solid ${levelData.colors.text}`,
-              backgroundColor: levelData.colors.background,
-              backgroundImage: `
-                radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%),
-                repeating-linear-gradient(0deg, transparent, transparent 27px, ${levelData.colors.primary}15 27px, ${levelData.colors.primary}15 28px),
-                repeating-linear-gradient(90deg, transparent, transparent 27px, ${levelData.colors.primary}15 27px, ${levelData.colors.primary}15 28px)
-              `,
-              boxShadow: `0 8px 32px rgba(0,0,0,0.1), 0 0 0 8px ${levelData.colors.primary}20`
+              width: `${GRID_SIZE * CELL_SIZE * boardScale}px`,
+              height: `${GRID_SIZE * CELL_SIZE * boardScale}px`
             }}
           >
+            <div
+              className="absolute"
+              style={{
+                transform: `scale(${boardScale})`,
+                transformOrigin: 'top left',
+                width: `${GRID_SIZE * CELL_SIZE}px`,
+                height: `${GRID_SIZE * CELL_SIZE}px`,
+                border: `3px solid ${levelData.colors.text}`,
+                backgroundColor: levelData.colors.background,
+                backgroundImage: `
+                  radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%),
+                  repeating-linear-gradient(0deg, transparent, transparent 27px, ${levelData.colors.primary}15 27px, ${levelData.colors.primary}15 28px),
+                  repeating-linear-gradient(90deg, transparent, transparent 27px, ${levelData.colors.primary}15 27px, ${levelData.colors.primary}15 28px)
+                `,
+                boxShadow: `0 8px 32px rgba(0,0,0,0.1), 0 0 0 8px ${levelData.colors.primary}20`
+              }}
+            >
             {/* Level 6: Fog of War */}
             {level === 6 && (
               <div
@@ -1645,8 +1717,90 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               )}
             </AnimatePresence>
           </div>
+        </div>
 
-          {/* Controls Help */}
+        {/* Virtual D-pad for mobile */}
+        {isTouchDevice && (
+          <div className="flex flex-col items-center gap-1 mt-4 no-print select-none">
+            {/* UP button */}
+            <div className="flex justify-center">
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => {
+                  if (directionRef.current !== 'DOWN') {
+                    setDirection('UP');
+                    directionRef.current = 'UP';
+                  }
+                }}
+                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
+                style={{
+                  backgroundColor: levelData.colors.primary,
+                  borderColor: levelData.colors.text,
+                  color: '#fff'
+                }}
+              >
+                ▲
+              </motion.button>
+            </div>
+            {/* LEFT, DOWN, RIGHT buttons */}
+            <div className="flex gap-4 items-center">
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => {
+                  if (directionRef.current !== 'RIGHT') {
+                    setDirection('LEFT');
+                    directionRef.current = 'LEFT';
+                  }
+                }}
+                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
+                style={{
+                  backgroundColor: levelData.colors.primary,
+                  borderColor: levelData.colors.text,
+                  color: '#fff'
+                }}
+              >
+                ◀
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => {
+                  if (directionRef.current !== 'UP') {
+                    setDirection('DOWN');
+                    directionRef.current = 'DOWN';
+                  }
+                }}
+                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
+                style={{
+                  backgroundColor: levelData.colors.primary,
+                  borderColor: levelData.colors.text,
+                  color: '#fff'
+                }}
+              >
+                ▼
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => {
+                  if (directionRef.current !== 'LEFT') {
+                    setDirection('RIGHT');
+                    directionRef.current = 'RIGHT';
+                  }
+                }}
+                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl border-2 shadow-md active:bg-opacity-80 text-xl font-bold"
+                style={{
+                  backgroundColor: levelData.colors.primary,
+                  borderColor: levelData.colors.text,
+                  color: '#fff'
+                }}
+              >
+                ▶
+              </motion.button>
+            </div>
+          </div>
+        )}
+
+        {/* Controls Help */}
+        {!isTouchDevice && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1674,7 +1828,8 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               ))}
             </div>
           </motion.div>
-        </div>
+        )}
+      </div>
 
         {/* Column 2: Educational Details Sidebar */}
         <motion.div

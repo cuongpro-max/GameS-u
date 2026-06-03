@@ -45,17 +45,17 @@ export function LibraryPage({ onBack }: LibraryPageProps) {
 
       <div className="max-w-6xl w-full mx-auto flex-1 flex flex-col gap-6 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between border-b-2 border-[#7a6f5d] pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[#7a6f5d] pb-4 gap-2">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[#5a5244] hover:text-[#3d3529] hover:bg-[#d4cfc2]/30 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[#5a5244] hover:text-[#3d3529] hover:bg-[#d4cfc2]/30 transition-all self-start"
           >
             <ArrowLeft className="w-5 h-5" />
             Quay lại Menu
           </button>
           <div className="flex items-center gap-3">
             <BookOpen className="w-6 h-6 text-[#3d3529]" />
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#3d3529]">
+            <h1 className="text-xl md:text-3xl font-serif font-bold text-[#3d3529]">
               THƯ VIỆN TRI THỨC
             </h1>
           </div>
@@ -65,10 +65,9 @@ export function LibraryPage({ onBack }: LibraryPageProps) {
         </div>
 
         {/* Main Content Split Area */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           {/* Left Column: Level Navigation (4 cols) */}
-          <div className="lg:col-span-4 flex flex-col gap-3 max-h-[650px] overflow-y-auto pr-2">
-            <p className="text-xs uppercase tracking-wider text-[#7a6f5d] font-bold mb-1">Danh sách chương học</p>
+          <div className="lg:col-span-4 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto max-h-[85px] lg:max-h-[650px] pb-2 lg:pb-0 pr-2 scrollbar-thin">
             {Object.keys(LEVEL_LESSONS).map((lvlKey) => {
               const lvlNum = parseInt(lvlKey);
               const isActive = selectedLevel === lvlNum;
@@ -81,21 +80,21 @@ export function LibraryPage({ onBack }: LibraryPageProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedLevel(lvlNum)}
-                  className={`w-full text-left p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
+                  className={`flex-shrink-0 flex items-center gap-2 p-2 px-3 rounded-lg border-2 transition-all lg:w-full lg:text-left lg:p-4 lg:rounded-xl ${
                     isActive
                       ? `bg-white border-[#3d3529] shadow-md`
                       : 'bg-white/60 border-transparent hover:bg-white/80 hover:border-[#7a6f5d]/50'
                   }`}
                 >
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 lg:w-8 lg:h-8 lg:text-sm"
                     style={{ backgroundColor: lvlTheme.color }}
                   >
                     {lvlNum}
                   </div>
-                  <div className="overflow-hidden">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">MÀN {lvlNum}</p>
-                    <p className="font-serif font-bold text-sm text-[#3d3529] truncate">{lvlLesson.title}</p>
+                  <div className="text-left overflow-hidden">
+                    <p className="text-[8px] uppercase tracking-wider text-slate-400 font-bold lg:text-[10px]">MÀN {lvlNum}</p>
+                    <p className="font-serif font-bold text-xs text-[#3d3529] truncate lg:text-sm max-w-[120px] lg:max-w-none">{lvlLesson.title}</p>
                   </div>
                 </motion.button>
               );
