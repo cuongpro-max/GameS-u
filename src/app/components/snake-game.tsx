@@ -1471,9 +1471,9 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
         )}
 
         {/* Column 1: Playing Board + D-pad stacked for mobile */}
-        <div className="flex flex-col items-center flex-shrink-0 w-full lg:w-auto gap-2">
+        <div className="relative flex flex-col items-center flex-shrink-0 w-full lg:w-auto gap-2">
           <div
-            className="relative overflow-hidden rounded-3xl flex-shrink-0"
+            className="relative overflow-visible rounded-3xl flex-shrink-0"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             style={{
@@ -1481,6 +1481,7 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               height: `${GRID_SIZE * CELL_SIZE * boardScale}px`
             }}
           >
+
             <div
               className="absolute"
               style={{
@@ -1771,6 +1772,28 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Mini-map overlay for mobile - outside scaled board, fixed size at top-right */}
+          {isTouchDevice && (
+            <div
+              className="pointer-events-none"
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                zIndex: 40,
+                opacity: 0.92,
+              }}
+            >
+              <MiniMap
+                snake={snake}
+                orbs={orbs}
+                gridSize={GRID_SIZE}
+                color={levelData.colors.primary}
+                compact={true}
+              />
+            </div>
+          )}
         </div>
 
           {/* Virtual D-pad for mobile - inside the board column so it stacks properly */}

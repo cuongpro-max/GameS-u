@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { ConceptOrb, Position } from './snake-game';
 
 interface MiniMapProps {
@@ -7,17 +6,23 @@ interface MiniMapProps {
   gridSize: number;
   color: string;
   className?: string;
+  compact?: boolean;
 }
 
-export function MiniMap({ snake, orbs, gridSize, color, className = '' }: MiniMapProps) {
-  // Mini-map size in pixels
-  const MAP_SIZE = 120;
+export function MiniMap({ snake, orbs, gridSize, color, className = '', compact = false }: MiniMapProps) {
+  // Mini-map size in pixels - smaller when compact (mobile overlay)
+  const MAP_SIZE = compact ? 80 : 120;
   const CELL_SIZE = MAP_SIZE / gridSize;
 
   return (
     <div
-      className={`bg-white/80 backdrop-blur-md rounded-lg shadow-lg p-2 border-2 border-slate-100 ${className}`}
-      style={{ width: MAP_SIZE + 16, height: MAP_SIZE + 16 }}
+      className={`backdrop-blur-md rounded-lg shadow-lg border-2 ${compact ? 'p-1' : 'p-2'} ${className}`}
+      style={{
+        width: MAP_SIZE + (compact ? 8 : 16),
+        height: MAP_SIZE + (compact ? 8 : 16),
+        backgroundColor: 'rgba(255,255,255,0.85)',
+        borderColor: color + '60',
+      }}
     >
       <div className="relative" style={{ width: MAP_SIZE, height: MAP_SIZE }}>
         {/* Grid Background (optional, maybe just border) */}
@@ -67,10 +72,12 @@ export function MiniMap({ snake, orbs, gridSize, color, className = '' }: MiniMa
         })}
       </div>
 
-      {/* Legend/Label */}
-      <div className="mt-1 text-[10px] text-center font-medium text-slate-500 uppercase tracking-wider">
-        Bản đồ
-      </div>
+      {/* Legend/Label - hidden when compact */}
+      {!compact && (
+        <div className="mt-1 text-[10px] text-center font-medium text-slate-500 uppercase tracking-wider">
+          Bản đồ
+        </div>
+      )}
     </div>
   );
 }
