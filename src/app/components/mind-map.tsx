@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Download, ZoomIn, ZoomOut, Maximize2, Check, BookOpen, Landmark, HelpCircle, Award } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Maximize2, Check, BookOpen, Landmark, HelpCircle, Award, ChevronDown, ChevronRight } from 'lucide-react';
 import { LEVEL_LESSONS } from '../utils/game-progress';
 
 interface MindMapProps {
@@ -35,7 +35,6 @@ const NODES: MindMapNode[] = [
     textColor: '#ffffff',
     description: 'Mối quan hệ biện chứng giữa vấn đề dân tộc và tôn giáo trong quá trình xây dựng chủ nghĩa xã hội, bao gồm cơ sở lý luận, cương lĩnh hành động và các nguyên tắc chính sách thực tiễn của Nhà nước Việt Nam.'
   },
-  // Categories
   {
     id: 'cat-dantoc',
     label: 'VẤN ĐỀ DÂN TỘC',
@@ -60,7 +59,6 @@ const NODES: MindMapNode[] = [
     parent: 'root',
     description: 'Nghiên cứu về thế giới quan tôn giáo dưới góc nhìn duy vật biện chứng: bản chất, nguyên nhân tồn tại, các đặc điểm xã hội và chính sách tự do tín ngưỡng tôn giáo tại Việt Nam.'
   },
-  // Sub-nodes: Dân tộc
   {
     id: 'sub-concept',
     label: 'Khái niệm Dân tộc',
@@ -106,7 +104,6 @@ const NODES: MindMapNode[] = [
     icon: BookOpen,
     description: 'Ba nội dung cốt lõi do V.I.Lênin soạn thảo nhằm giải quyết quan hệ dân tộc khoa học: Các dân tộc hoàn toàn bình đẳng; Các dân tộc được quyền tự quyết; Liên hiệp công nhân tất cả các dân tộc.'
   },
-  // Sub-nodes: Tôn giáo
   {
     id: 'sub-nature',
     label: 'Bản chất Tôn giáo',
@@ -197,370 +194,302 @@ const CONNECTIONS = [
   { from: 'cat-tongiao', to: 'sub-policy' }
 ];
 
-export function MindMap({ onBack }: MindMapProps) {
-  const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
-  const [zoom, setZoom] = useState<number>(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const printAreaRef = useRef<HTMLDivElement>(null);
+// ────────────────────────────────────────────────
+// Mobile accordion tree component
+// ────────────────────────────────────────────────
+interface MobileTreeProps {
+  onSelect: (node: MindMapNode) => void;
+  selectedId: string | null;
+}
 
-  // Auto zoom on mobile viewports on mount/resize
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 1024;
-      if (isMobile) {
-        const calculatedZoom = Math.max(0.25, Math.min(1, (window.innerWidth - 32) / 1300));
-        setZoom(calculatedZoom);
-      } else {
-        setZoom(1);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+function MobileTree({ onSelect, selectedId }: MobileTreeProps) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    'cat-dantoc': true,
+    'cat-tongiao': true,
+  });
+
+  const rootNode = NODES.find(n => n.id === 'root')!;
+  const categories = NODES.filter(n => n.type === 'category');
+
+  const toggle = (id: string) =>
+    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+
+  return (
+    <div className="flex flex-col gap-3 px-4 pb-24 pt-2 w-full max-w-lg mx-auto">
+      {/* Root node */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => onSelect(rootNode)}
+        className="w-full py-4 px-5 rounded-2xl text-center font-bold text-base shadow-lg border-2 border-[#7a6f5d]/40"
+        style={{
+          backgroundColor: selectedId === rootNode.id ? rootNode.hoverColor : rootNode.color,
+          color: rootNode.textColor
+        }}
+      >
+        {rootNode.label.replace('\n', ' — ')}
+      </motion.button>
+
+      {/* Vertical connector from root */}
+      <div className="flex justify-center">
+        <div className="w-0.5 h-4 bg-[#7a6f5d]/50" />
+      </div>
+
+      {/* Categories + sub-nodes */}
+      <div className="flex flex-col gap-4">
+        {categories.map(cat => {
+          const children = NODES.filter(n => n.parent === cat.id);
+          const isOpen = expanded[cat.id];
+
+          return (
+            <div key={cat.id} className="flex flex-col">
+              {/* Category header */}
+              <div className="flex gap-2 items-center">
+                <div className="w-4 h-0.5 bg-[#7a6f5d]/50 flex-shrink-0" />
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { onSelect(cat); toggle(cat.id); }}
+                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm shadow-md border-2 border-[#7a6f5d]/30 flex items-center justify-between"
+                  style={{
+                    backgroundColor: selectedId === cat.id ? cat.hoverColor : cat.color,
+                    color: cat.textColor
+                  }}
+                >
+                  <span>{cat.label}</span>
+                  {isOpen
+                    ? <ChevronDown className="w-4 h-4 opacity-80 flex-shrink-0" />
+                    : <ChevronRight className="w-4 h-4 opacity-80 flex-shrink-0" />
+                  }
+                </motion.button>
+              </div>
+
+              {/* Children */}
+              <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="ml-6 mt-2 flex flex-col gap-2 border-l-2 border-[#7a6f5d]/25 pl-4">
+                      {children.map(child => {
+                        const Icon = child.icon;
+                        return (
+                          <motion.button
+                            key={child.id}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => onSelect(child)}
+                            className="w-full py-3 px-4 rounded-xl text-sm shadow-sm border border-[#7a6f5d]/20 flex items-center gap-3 text-left"
+                            style={{
+                              backgroundColor: selectedId === child.id ? child.hoverColor : child.color,
+                              color: child.textColor
+                            }}
+                          >
+                            {Icon && <Icon className="w-4 h-4 flex-shrink-0 opacity-80" />}
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="font-semibold leading-snug">{child.label}</span>
+                              {child.level && (
+                                <span className="text-[10px] opacity-70 uppercase tracking-wider font-bold mt-0.5">
+                                  Màn {child.level}
+                                </span>
+                              )}
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────
+// Desktop canvas component
+// ────────────────────────────────────────────────
+const CANVAS_W = 1300;
+const CANVAS_H = 750;
+
+function DesktopCanvas({ onSelect, selectedId }: { onSelect: (n: MindMapNode) => void; selectedId: string | null }) {
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
-    setIsDragging(true);
-    dragStart.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    isDragging.current = true;
+    dragStart.current = { mouseX: e.clientX, mouseY: e.clientY, panX: pan.x, panY: pan.y };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const newX = e.clientX - dragStart.current.x;
-    const newY = e.clientY - dragStart.current.y;
-    setPanOffset({ x: newX, y: newY });
+    if (!isDragging.current) return;
+    const dx = e.clientX - dragStart.current.mouseX;
+    const dy = e.clientY - dragStart.current.mouseY;
+    setPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy });
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    isDragging.current = false;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoom(prev => Math.min(1.4, Math.max(0.3, prev - e.deltaY * 0.001)));
+  };
+
+  const handleZoom = (type: 'in' | 'out' | 'reset') => {
+    if (type === 'in') setZoom(p => Math.min(1.4, p + 0.1));
+    else if (type === 'out') setZoom(p => Math.max(0.3, p - 0.1));
+    else { setZoom(0.85); setPan({ x: 0, y: 0 }); }
   };
 
   const getAnchorPoints = (nodeId: string) => {
     const node = NODES.find(n => n.id === nodeId);
-    if (!node) return { x: 0, y: 0 };
-
-    // Returns left, right depending on connection layout
+    if (!node) return {};
     if (node.type === 'root') {
       return {
         left: { x: node.x - 110, y: node.y },
         right: { x: node.x + 110, y: node.y }
       };
     }
-
-    if (node.id === 'cat-dantoc') {
+    if (node.id === 'cat-dantoc' || node.id === 'cat-tongiao') {
       return {
         left: { x: node.x - 90, y: node.y },
         right: { x: node.x + 90, y: node.y }
       };
     }
-
-    if (node.id === 'cat-tongiao') {
-      return {
-        left: { x: node.x - 90, y: node.y },
-        right: { x: node.x + 90, y: node.y }
-      };
-    }
-
-    if (node.parent === 'cat-dantoc') {
-      return { right: { x: node.x + 100, y: node.y } };
-    }
-
-    if (node.parent === 'cat-tongiao') {
-      return { left: { x: node.x - 100, y: node.y } };
-    }
-
-    return { x: node.x, y: node.y };
+    if (node.parent === 'cat-dantoc') return { right: { x: node.x + 100, y: node.y } };
+    if (node.parent === 'cat-tongiao') return { left: { x: node.x - 100, y: node.y } };
+    return {};
   };
 
   const getPathData = (fromId: string, toId: string) => {
-    const fromAnchors = getAnchorPoints(fromId) as any;
-    const toAnchors = getAnchorPoints(toId) as any;
-
-    let startX = 0, startY = 0, endX = 0, endY = 0;
-
-    if (fromId === 'root' && toId === 'cat-dantoc') {
-      startX = fromAnchors.left.x;
-      startY = fromAnchors.left.y;
-      endX = toAnchors.right.x;
-      endY = toAnchors.right.y;
-    } else if (fromId === 'root' && toId === 'cat-tongiao') {
-      startX = fromAnchors.right.x;
-      startY = fromAnchors.right.y;
-      endX = toAnchors.left.x;
-      endY = toAnchors.left.y;
-    } else if (fromId === 'cat-dantoc') {
-      startX = fromAnchors.left.x;
-      startY = fromAnchors.left.y;
-      endX = toAnchors.right.x;
-      endY = toAnchors.right.y;
-    } else if (fromId === 'cat-tongiao') {
-      startX = fromAnchors.right.x;
-      startY = fromAnchors.right.y;
-      endX = toAnchors.left.x;
-      endY = toAnchors.left.y;
-    }
-
-    // Generate smooth bezier curve
-    const controlPointX = (startX + endX) / 2;
-    return `M ${startX} ${startY} C ${controlPointX} ${startY}, ${controlPointX} ${endY}, ${endX} ${endY}`;
+    const fromA = getAnchorPoints(fromId) as any;
+    const toA = getAnchorPoints(toId) as any;
+    let sx = 0, sy = 0, ex = 0, ey = 0;
+    if (fromId === 'root' && toId === 'cat-dantoc') { sx = fromA.left.x; sy = fromA.left.y; ex = toA.right.x; ey = toA.right.y; }
+    else if (fromId === 'root' && toId === 'cat-tongiao') { sx = fromA.right.x; sy = fromA.right.y; ex = toA.left.x; ey = toA.left.y; }
+    else if (fromId === 'cat-dantoc') { sx = fromA.left.x; sy = fromA.left.y; ex = toA.right.x; ey = toA.right.y; }
+    else if (fromId === 'cat-tongiao') { sx = fromA.right.x; sy = fromA.right.y; ex = toA.left.x; ey = toA.left.y; }
+    const cx = (sx + ex) / 2;
+    return `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ey}, ${ex} ${ey}`;
   };
-
-  const handleZoom = (type: 'in' | 'out' | 'reset') => {
-    if (type === 'in') setZoom(prev => Math.min(1.4, prev + 0.1));
-    else if (type === 'out') setZoom(prev => Math.max(0.2, prev - 0.1));
-    else {
-      const isMobile = window.innerWidth < 1024;
-      if (isMobile) {
-        setZoom(Math.max(0.25, Math.min(1, (window.innerWidth - 32) / 1300)));
-      } else {
-        setZoom(1);
-      }
-      setPanOffset({ x: 0, y: 0 });
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const activeLesson = selectedNode?.lessonIndex ? LEVEL_LESSONS[selectedNode.lessonIndex] : null;
 
   return (
-    <div className="w-full min-h-screen bg-[#e8e4db] flex flex-col relative overflow-hidden py-6 px-4 md:px-8">
-      {/* Dynamic print style injection */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-            background: none !important;
-          }
-          #print-section, #print-section * {
-            visibility: visible;
-          }
-          #print-section {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 297mm; /* Landscape A4 width */
-            height: 210mm; /* Landscape A4 height */
-            transform: scale(0.9) !important;
-            transform-origin: top left;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* Decorative corners */}
-      <div className="absolute top-4 left-4 w-12 h-12 md:top-8 md:left-8 md:w-16 md:h-16 border-l-2 border-t-2 border-[#7a6f5d] pointer-events-none no-print" />
-      <div className="absolute top-4 right-4 w-12 h-12 md:top-8 md:right-8 md:w-16 md:h-16 border-r-2 border-t-2 border-[#7a6f5d] pointer-events-none no-print" />
-      <div className="absolute bottom-4 left-4 w-12 h-12 md:bottom-8 md:left-8 md:w-16 md:h-16 border-l-2 border-b-2 border-[#7a6f5d] pointer-events-none no-print" />
-      <div className="absolute bottom-4 right-4 w-12 h-12 md:bottom-8 md:right-8 md:w-16 md:h-16 border-r-2 border-b-2 border-[#7a6f5d] pointer-events-none no-print" />
-
-      {/* Header */}
-      <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-[#7a6f5d] pb-4 mb-4 relative z-20 no-print">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[#5a5244] hover:text-[#3d3529] hover:bg-[#d4cfc2]/30 transition-all self-start md:self-auto"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Menu chính
-        </button>
-
-        <div className="text-center">
-          <h1 className="text-xl md:text-3xl font-serif font-bold text-[#3d3529]">
-            BẢN ĐỒ TƯ DUY TỔNG KẾT
-          </h1>
-          <p className="text-xs uppercase tracking-widest text-[#7a6f5d] font-bold mt-1">
-            Chương VI: Dân tộc & Tôn giáo
-          </p>
-        </div>
-
-        <div className="flex gap-2 w-full md:w-auto">
-          <button
-            onClick={handlePrint}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-[#b8860b] hover:bg-[#966d03] transition-all shadow-md w-full md:w-auto"
-          >
-            <Download className="w-4 h-4" />
-            In / Lưu PDF
-          </button>
-        </div>
-      </div>
-
-      {/* Floating Canvas Controls */}
-      <div className="absolute bottom-8 left-8 flex items-center gap-2 bg-white/90 backdrop-blur-sm border-2 border-[#7a6f5d] p-1.5 rounded-xl shadow-lg z-30 no-print">
-        <button
-          onClick={() => handleZoom('out')}
-          className="p-2 text-[#7a6f5d] hover:bg-[#e8e4db] rounded-lg transition-all"
-          title="Thu nhỏ"
-        >
-          <ZoomOut className="w-5 h-5" />
-        </button>
-        <span className="text-xs font-bold text-[#5a5244] min-w-[50px] text-center">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          onClick={() => handleZoom('in')}
-          className="p-2 text-[#7a6f5d] hover:bg-[#e8e4db] rounded-lg transition-all"
-          title="Phóng to"
-        >
-          <ZoomIn className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => handleZoom('reset')}
-          className="p-2 text-[#7a6f5d] hover:bg-[#e8e4db] rounded-lg transition-all border-l border-[#7a6f5d]/30"
-          title="Khôi phục"
-        >
-          <Maximize2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Map Interactive Canvas */}
-      <div 
-        className="flex-1 w-full overflow-hidden flex items-center justify-center relative p-4 select-none cursor-grab active:cursor-grabbing touch-none"
+    <div className="flex-1 w-full relative overflow-hidden select-none">
+      {/* Pan/Zoom canvas */}
+      <div
+        ref={containerRef}
+        className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <div
-          id="print-section"
-          ref={printAreaRef}
-          className="relative transition-transform duration-75 ease-out border-2 border-[#7a6f5d]/30 rounded-3xl bg-[#f5f2eb]/90 shadow-inner"
           style={{
-            width: '1300px',
-            height: '750px',
-            transform: `scale(${zoom}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+            width: `${CANVAS_W}px`,
+            height: `${CANVAS_H}px`,
+            transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
             transformOrigin: 'center center',
+            position: 'relative',
+            border: '2px solid rgba(122,111,93,0.3)',
+            borderRadius: '24px',
+            backgroundColor: 'rgba(245,242,235,0.9)',
             backgroundImage: `
-              repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(122,111,93,0.02) 29px, rgba(122,111,93,0.02) 31px),
-              repeating-linear-gradient(90deg, transparent, transparent 29px, rgba(122,111,93,0.02) 29px, rgba(122,111,93,0.02) 31px)
-            `
+              repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(122,111,93,0.025) 29px, rgba(122,111,93,0.025) 31px),
+              repeating-linear-gradient(90deg, transparent, transparent 29px, rgba(122,111,93,0.025) 29px, rgba(122,111,93,0.025) 31px)
+            `,
+            flexShrink: 0,
           }}
         >
-          {/* SVG Connector Lines */}
+          {/* SVG Lines */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
             <defs>
-              <marker
-                id="arrow-left"
-                viewBox="0 0 10 10"
-                refX="0"
-                refY="5"
-                markerWidth="6"
-                markerHeight="6"
-                orient="auto-start-reverse"
-              >
-                <path d="M 10 0 L 0 5 L 10 10 z" fill="#7a6f5d" opacity="0.6" />
+              <marker id="arrow-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a6f5d" opacity="0.7" />
               </marker>
-              <marker
-                id="arrow-right"
-                viewBox="0 0 10 10"
-                refX="10"
-                refY="5"
-                markerWidth="6"
-                markerHeight="6"
-                orient="auto-start-reverse"
-              >
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a6f5d" opacity="0.6" />
+              <marker id="arrow-l" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <path d="M 10 0 L 0 5 L 10 10 z" fill="#7a6f5d" opacity="0.7" />
               </marker>
             </defs>
             {CONNECTIONS.map((conn, idx) => {
-              const fromNode = NODES.find(n => n.id === conn.from);
               const toNode = NODES.find(n => n.id === conn.to);
-              if (!fromNode || !toNode) return null;
-
-              const isLeftFlow = toNode.parent === 'cat-dantoc' || toNode.id === 'cat-dantoc';
-
+              if (!toNode) return null;
+              const isLeft = toNode.parent === 'cat-dantoc' || toNode.id === 'cat-dantoc';
               return (
                 <g key={idx}>
-                  {/* Outer path for vintage shadow/border effect */}
-                  <path
-                    d={getPathData(conn.from, conn.to)}
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="5"
-                    strokeLinecap="round"
-                    opacity="0.8"
-                  />
-                  {/* Main connection curve */}
+                  <path d={getPathData(conn.from, conn.to)} fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" opacity="0.8" />
                   <path
                     d={getPathData(conn.from, conn.to)}
                     fill="none"
                     stroke="#7a6f5d"
                     strokeWidth="2.5"
                     strokeLinecap="round"
-                    markerEnd={isLeftFlow ? "url(#arrow-left)" : "url(#arrow-right)"}
+                    markerEnd={isLeft ? 'url(#arrow-l)' : 'url(#arrow-r)'}
                     opacity="0.75"
-                    className="transition-all duration-300"
                   />
                 </g>
               );
             })}
           </svg>
 
-          {/* Render Nodes */}
-          {NODES.map((node) => {
-            const isSelected = selectedNode?.id === node.id;
-            
-            // Adjust widths/heights according to node type
-            let nodeWidth = 'w-[220px]';
-            let nodeHeight = 'h-[75px]';
-            let nodeRound = 'rounded-2xl';
-            let fontSize = 'text-xs md:text-sm';
-            
-            if (node.type === 'root') {
-              nodeWidth = 'w-[240px]';
-              nodeHeight = 'h-[85px]';
-              nodeRound = 'rounded-3xl';
-              fontSize = 'text-sm md:text-base font-bold';
-            } else if (node.type === 'category') {
-              nodeWidth = 'w-[180px]';
-              nodeHeight = 'h-[65px]';
-              nodeRound = 'rounded-xl';
-              fontSize = 'text-xs md:text-sm font-semibold';
-            }
-
-            let leftPos = node.x;
-            let topPos = node.y;
-            if (node.type === 'root') {
-              leftPos = node.x - 120;
-              topPos = node.y - 42.5;
-            } else if (node.type === 'category') {
-              leftPos = node.x - 90;
-              topPos = node.y - 32.5;
-            } else {
-              leftPos = node.x - 110;
-              topPos = node.y - 37.5;
-            }
-
+          {/* Nodes */}
+          {NODES.map(node => {
+            const isSelected = selectedId === node.id;
+            let w = 220, h = 75, r = '16px';
+            if (node.type === 'root') { w = 240; h = 85; r = '24px'; }
+            else if (node.type === 'category') { w = 180; h = 65; r = '12px'; }
+            const lx = node.type === 'root' ? node.x - 120 : node.type === 'category' ? node.x - 90 : node.x - 110;
+            const ty = node.type === 'root' ? node.y - 42.5 : node.type === 'category' ? node.y - 32.5 : node.y - 37.5;
+            const Icon = node.icon;
             return (
               <motion.button
                 key={node.id}
-                whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }}
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.18)' }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedNode(node)}
-                className={`absolute ${nodeWidth} ${nodeHeight} ${nodeRound} p-2 flex flex-col items-center justify-center text-center transition-colors border-2 shadow-md z-10`}
+                onClick={() => onSelect(node)}
                 style={{
-                  left: `${leftPos}px`,
-                  top: `${topPos}px`,
+                  position: 'absolute',
+                  left: `${lx}px`,
+                  top: `${ty}px`,
+                  width: `${w}px`,
+                  height: `${h}px`,
+                  borderRadius: r,
                   backgroundColor: isSelected ? node.hoverColor : node.color,
-                  borderColor: '#7a6f5d',
-                  color: node.textColor
+                  color: node.textColor,
+                  border: `2px solid ${isSelected ? '#fff' : '#7a6f5d'}`,
+                  boxShadow: isSelected ? `0 0 0 3px ${node.color}80, 0 8px 24px rgba(0,0,0,0.15)` : '0 4px 12px rgba(0,0,0,0.12)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  padding: '8px', zIndex: 10, cursor: 'pointer'
                 }}
               >
-                <div className="flex items-center gap-1.5 justify-center w-full">
-                  {node.icon && <node.icon className="w-4 h-4 flex-shrink-0 opacity-80" />}
-                  <span className={`${fontSize} font-serif tracking-wide leading-tight whitespace-pre-line`}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', width: '100%' }}>
+                  {Icon && <Icon style={{ width: '14px', height: '14px', flexShrink: 0, opacity: 0.85 }} />}
+                  <span style={{
+                    fontSize: node.type === 'root' ? '13px' : '11px',
+                    fontWeight: node.type === 'root' ? 700 : 600,
+                    textAlign: 'center',
+                    lineHeight: 1.35,
+                    whiteSpace: 'pre-line',
+                    fontFamily: 'serif'
+                  }}>
                     {node.label}
                   </span>
                 </div>
                 {node.level && (
-                  <span className="text-[8px] opacity-75 uppercase tracking-wider font-bold mt-1">
+                  <span style={{ fontSize: '8px', opacity: 0.75, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginTop: '3px' }}>
                     MÀN {node.level}
                   </span>
                 )}
@@ -570,100 +499,215 @@ export function MindMap({ onBack }: MindMapProps) {
         </div>
       </div>
 
-      {/* Floating Detailed Sidebar/Drawer on Selection */}
+      {/* Zoom controls */}
+      <div className="absolute bottom-6 left-6 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm border-2 border-[#7a6f5d] p-1.5 rounded-xl shadow-lg z-30">
+        <button onClick={() => handleZoom('out')} className="p-2 text-[#7a6f5d] hover:bg-[#e8e4db] rounded-lg transition-all" title="Thu nhỏ">
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <span className="text-xs font-bold text-[#5a5244] min-w-[44px] text-center">{Math.round(zoom * 100)}%</span>
+        <button onClick={() => handleZoom('in')} className="p-2 text-[#7a6f5d] hover:bg-[#e8e4db] rounded-lg transition-all" title="Phóng to">
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <button onClick={() => handleZoom('reset')} className="p-2 text-[#7a6f5d] hover:bg-[#e8e4db] rounded-lg transition-all border-l border-[#7a6f5d]/30" title="Khôi phục">
+          <Maximize2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────
+// Main component
+// ────────────────────────────────────────────────
+export function MindMap({ onBack }: MindMapProps) {
+  const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const activeLesson = selectedNode?.lessonIndex ? LEVEL_LESSONS[selectedNode.lessonIndex] : null;
+
+  return (
+    <div className="w-full min-h-screen bg-[#e8e4db] flex flex-col relative overflow-hidden">
+      {/* Decorative corners */}
+      <div className="absolute top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-[#7a6f5d] pointer-events-none" />
+      <div className="absolute top-4 right-4 w-10 h-10 border-r-2 border-t-2 border-[#7a6f5d] pointer-events-none" />
+      <div className="absolute bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-[#7a6f5d] pointer-events-none" />
+      <div className="absolute bottom-4 right-4 w-10 h-10 border-r-2 border-b-2 border-[#7a6f5d] pointer-events-none" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 md:px-8 md:py-4 border-b-2 border-[#7a6f5d]/40 bg-[#e8e4db]/80 backdrop-blur-sm z-20 flex-shrink-0">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm text-[#5a5244] hover:text-[#3d3529] hover:bg-[#d4cfc2]/50 transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Menu chính</span>
+        </button>
+
+        <div className="text-center flex-1 px-4">
+          <h1 className="text-base md:text-2xl font-serif font-bold text-[#3d3529] leading-tight">
+            BẢN ĐỒ TƯ DUY TỔNG KẾT
+          </h1>
+          <p className="text-[10px] md:text-xs uppercase tracking-widest text-[#7a6f5d] font-bold mt-0.5 hidden sm:block">
+            Chương VI: Dân tộc & Tôn giáo
+          </p>
+        </div>
+
+        {/* Placeholder to balance header */}
+        <div className="w-20 md:w-28" />
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        {/* Map area */}
+        <div className={`flex-1 overflow-y-auto md:overflow-hidden min-h-0 ${selectedNode && !isMobile ? 'md:mr-0' : ''}`}>
+          {isMobile ? (
+            <MobileTree
+              onSelect={setSelectedNode}
+              selectedId={selectedNode?.id ?? null}
+            />
+          ) : (
+            <DesktopCanvas
+              onSelect={setSelectedNode}
+              selectedId={selectedNode?.id ?? null}
+            />
+          )}
+        </div>
+
+        {/* Desktop: inline sidebar */}
+        <AnimatePresence>
+          {selectedNode && !isMobile && (
+            <motion.div
+              key="desktop-sidebar"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 400, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="hidden md:flex flex-col border-l-4 border-[#7a6f5d]/50 bg-[#fcfaf7] overflow-y-auto flex-shrink-0"
+              style={{ minHeight: 0 }}
+            >
+              <NodeDetail node={selectedNode} lesson={activeLesson} onClose={() => setSelectedNode(null)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Mobile: bottom sheet drawer */}
       <AnimatePresence>
-        {selectedNode && (
+        {selectedNode && isMobile && (
           <motion.div
-            initial={{ x: 400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 400, opacity: 0 }}
-            className="fixed top-0 right-0 w-full sm:w-[450px] h-full bg-[#fcfaf7] border-l-4 border-[#7a6f5d] shadow-2xl z-50 flex flex-col p-6 overflow-y-auto no-print"
+            key="mobile-drawer"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-[#fcfaf7] rounded-t-3xl shadow-2xl border-t-4 border-[#7a6f5d]/50 max-h-[75vh] flex flex-col"
           >
-            {/* Drawer Header */}
-            <div className="flex justify-between items-start border-b border-[#7a6f5d]/30 pb-4 mb-4">
-              <div>
-                <span
-                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider"
-                  style={{ backgroundColor: selectedNode.color }}
-                >
-                  {selectedNode.type === 'root'
-                    ? 'Gốc lý luận'
-                    : selectedNode.type === 'category'
-                    ? 'Chuyên đề lớn'
-                    : `Chương học - Màn ${selectedNode.level}`}
-                </span>
-                <h3 className="text-xl md:text-2xl font-serif font-bold text-[#3d3529] mt-2">
-                  {selectedNode.label.replace('\n', ' ')}
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedNode(null)}
-                className="w-8 h-8 rounded-full border border-[#7a6f5d]/30 flex items-center justify-center text-[#7a6f5d] hover:bg-[#e8e4db] transition-all font-bold text-lg"
-              >
-                ×
-              </button>
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-[#7a6f5d]/30" />
             </div>
-
-            {/* Content Body */}
-            <div className="flex-1 flex flex-col gap-6 text-left">
-              {/* Core concept explanation */}
-              <div>
-                <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1.5">
-                  Tóm tắt nội dung
-                </h4>
-                <p className="text-sm md:text-base text-slate-700 leading-relaxed font-normal">
-                  {selectedNode.description}
-                </p>
-              </div>
-
-              {/* Detail points if it's connected to level lesson */}
-              {activeLesson && (
-                <>
-                  <div className="p-4 rounded-xl border border-[#7a6f5d]/20 bg-[#e8e4db]/30 flex flex-col gap-2">
-                    <h5 className="text-xs font-bold uppercase tracking-wider text-[#7a6f5d]">
-                      Luận điểm sách giáo khoa
-                    </h5>
-                    <p className="text-sm italic font-serif leading-relaxed text-slate-600">
-                      "{activeLesson.content}"
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold border-b border-[#7a6f5d]/20 pb-1">
-                      Các trọng tâm ôn thi
-                    </h4>
-                    <ul className="flex flex-col gap-2.5">
-                      {activeLesson.keyPoints.map((point, idx) => (
-                        <li key={idx} className="flex gap-2.5 items-start">
-                          <span
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold mt-0.5 flex-shrink-0"
-                            style={{ backgroundColor: selectedNode.color }}
-                          >
-                            <Check className="w-3 h-3" />
-                          </span>
-                          <span className="text-xs md:text-sm text-slate-700 font-normal leading-snug">
-                            {point}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Footer Close */}
-            <div className="border-t border-[#7a6f5d]/20 pt-4 mt-6">
-              <button
-                onClick={() => setSelectedNode(null)}
-                className="w-full py-3 bg-[#3d3529] hover:bg-[#252019] text-white rounded-xl font-semibold text-sm transition-all"
-              >
-                Đóng thông tin chi tiết
-              </button>
+            <div className="overflow-y-auto flex-1 min-h-0">
+              <NodeDetail node={selectedNode} lesson={activeLesson} onClose={() => setSelectedNode(null)} />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {selectedNode && isMobile && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedNode(null)}
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────
+// Shared detail panel
+// ────────────────────────────────────────────────
+interface NodeDetailProps {
+  node: MindMapNode;
+  lesson: any;
+  onClose: () => void;
+}
+
+function NodeDetail({ node, lesson, onClose }: NodeDetailProps) {
+  return (
+    <div className="p-5 flex flex-col gap-5 h-full">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div className="flex-1 min-w-0 pr-3">
+          <span
+            className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider mb-2"
+            style={{ backgroundColor: node.color }}
+          >
+            {node.type === 'root' ? 'Gốc lý luận' : node.type === 'category' ? 'Chuyên đề lớn' : `Chương học - Màn ${node.level}`}
+          </span>
+          <h3 className="text-lg font-serif font-bold text-[#3d3529] leading-snug">
+            {node.label.replace('\n', ' ')}
+          </h3>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-full border border-[#7a6f5d]/30 flex items-center justify-center text-[#7a6f5d] hover:bg-[#e8e4db] transition-all font-bold text-lg flex-shrink-0"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Description */}
+      <div>
+        <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">Tóm tắt nội dung</h4>
+        <p className="text-sm text-slate-700 leading-relaxed">{node.description}</p>
+      </div>
+
+      {/* Lesson detail */}
+      {lesson && (
+        <>
+          <div className="p-4 rounded-xl border border-[#7a6f5d]/20 bg-[#e8e4db]/30">
+            <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#7a6f5d] mb-2">Luận điểm sách giáo khoa</h5>
+            <p className="text-sm italic font-serif leading-relaxed text-slate-600">"{lesson.content}"</p>
+          </div>
+          <div>
+            <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-bold border-b border-[#7a6f5d]/20 pb-1 mb-3">Các trọng tâm ôn thi</h4>
+            <ul className="flex flex-col gap-2.5">
+              {lesson.keyPoints.map((point: string, idx: number) => (
+                <li key={idx} className="flex gap-2.5 items-start">
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold mt-0.5 flex-shrink-0"
+                    style={{ backgroundColor: node.color }}
+                  >
+                    <Check className="w-3 h-3" />
+                  </span>
+                  <span className="text-xs text-slate-700 leading-snug">{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+
+      <button
+        onClick={onClose}
+        className="w-full py-3 bg-[#3d3529] hover:bg-[#252019] text-white rounded-xl font-semibold text-sm transition-all mt-auto"
+      >
+        Đóng thông tin
+      </button>
     </div>
   );
 }
