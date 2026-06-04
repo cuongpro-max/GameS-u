@@ -457,6 +457,8 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
   const [showAnswerFeedback, setShowAnswerFeedback] = useState<boolean>(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean>(false);
   const [speedOffset, setSpeedOffset] = useState<number>(0);
+  const [stuckCount, setStuckCount] = useState<number>(0); // Đếm số lần bị block liên tiếp
+  const stuckCountRef = useRef<number>(0); // Ref để dùng trong game loop
 
   const handleCheckAnswer = () => {
     if (selectedOption === null || !currentQuestion) return;
@@ -841,10 +843,79 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
 
         // Check collision with self
         if (prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+          // Kiểm tra xem sâu có bị vây hoàn toàn không (tất cả 4 hướng đều bị block)
+          const head = prevSnake[0];
+          const allDirections = [
+            { x: head.x, y: head.y - 1 }, // UP
+            { x: head.x, y: head.y + 1 }, // DOWN
+            { x: head.x - 1, y: head.y }, // LEFT
+            { x: head.x + 1, y: head.y }, // RIGHT
+          ];
+          const isFullySurrounded = allDirections.every(pos => {
+            // Kiểm tra có bị thân sâu chặn hoặc ra ngoài biên (level 5) không
+            const hitSelf = prevSnake.some(s => s.x === pos.x && s.y === pos.y);
+            const hitWall = (level === 5 && levelData.disableWrap) &&
+              (pos.x < 0 || pos.x >= GRID_SIZE || pos.y < 0 || pos.y >= GRID_SIZE);
+            return hitSelf || hitWall;
+          });
+
+          if (isFullySurrounded) {
+            // Sâu bị vây hoàn toàn → cắt 50% thân để thoát
+            const newLength = Math.max(1, Math.floor(prevSnake.length / 2));
+            const cutSnake = prevSnake.slice(0, newLength);
+            setGameState('error');
+            setErrorMessage('Bị vây! Sâu tự cắt ngắn để thoát!');
+            setCombo(0);
+            setShowCombo(false);
+            setPenaltyTime(prev => prev + 3); // Phạt 3 giây
+            if (soundEnabled) {
+              soundManager.playWrongSound();
+            }
+            setTimeout(() => {
+              setGameState('playing');
+              setErrorMessage('');
+            }, 1200);
+            return cutSnake;
+          }
+
+          // Chưa bị vây hoàn toàn → tăng stuckCount
+          stuckCountRef.current += 1;
+          setStuckCount(stuckCountRef.current);
+
+          if (stuckCountRef.current >= 8) {
+            // Bị kẹt quá lâu (8 lần liên tiếp không di chuyển được) → giải phóng bằng cách cắt thân
+            stuckCountRef.current = 0;
+            setStuckCount(0);
+            const newLength = Math.max(1, Math.floor(prevSnake.length / 2));
+            const cutSnake = prevSnake.slice(0, newLength);
+            setGameState('error');
+            setErrorMessage('Bị kẹt! Sâu tự cắt ngắn để thoát!');
+            setCombo(0);
+            setShowCombo(false);
+            setPenaltyTime(prev => prev + 3);
+            if (soundEnabled) {
+              soundManager.playWrongSound();
+            }
+            setTimeout(() => {
+              setGameState('playing');
+              setErrorMessage('');
+            }, 1200);
+            return cutSnake;
+          }
+
           return prevSnake;
+        } else {
+          // Di chuyển thành công → reset stuckCount
+          if (stuckCountRef.current > 0) {
+            stuckCountRef.current = 0;
+            setStuckCount(0);
+          }
         }
 
+        // (Placeholder: continue below — split block ends here)
+
         // Check collision with legacy obstacles (Level 5)
+        // (stuckCount reset đã xử lý ở trên khi di chuyển thành công)
         if (level === 5 && legacyObstacles.some(obstacle => obstacle.x === newHead.x && obstacle.y === newHead.y)) {
           setGameState('error');
           setErrorMessage('Đụng vật cản lịch sử!');
@@ -1697,6 +1768,45 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
                 ❓
               </motion.div>
             )}
+
+            {/* Stuck warning overlay - hiện khi sâu bắt đầu bị kẹt */}
+            <AnimatePresence>
+              {gameState === 'playing' && stuckCount >= 3 && (
+                <motion.div
+                  key="stuck-warning"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0.4, 0.8, 0.4] }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6, repeat: Infinity }}
+                  className="absolute inset-0 pointer-events-none z-25"
+                  style={{
+                    border: `4px solid #f39c12`,
+                    boxShadow: 'inset 0 0 20px rgba(243, 156, 18, 0.4)',
+                    borderRadius: 'inherit'
+                  }}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Stuck count warning badge */}
+            <AnimatePresence>
+              {gameState === 'playing' && stuckCount >= 3 && (
+                <motion.div
+                  key="stuck-badge"
+                  initial={{ opacity: 0, scale: 0.7, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.7 }}
+                  className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"
+                  style={{
+                    backgroundColor: 'rgba(243, 156, 18, 0.95)',
+                    color: '#fff',
+                    boxShadow: '0 2px 10px rgba(243, 156, 18, 0.6)'
+                  }}
+                >
+                  ⚠️ Sắp bị vây! ({8 - stuckCount} bước)
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Error overlay */}
             <AnimatePresence>
