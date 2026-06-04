@@ -860,11 +860,14 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           });
 
           if (isFullySurrounded) {
-            // Sâu bị vây hoàn toàn → cắt 50% thân để thoát
+            // Sâu bị vây hoàn toàn → cắt 50% thân + xóa 1 từ cuối (lỗi vận động)
             const newLength = Math.max(1, Math.floor(prevSnake.length / 2));
             const cutSnake = prevSnake.slice(0, newLength);
+            // Xóa 1 từ cuối đã thu thập để người chơi phải ăn lại
+            setCollectedWords(prev => prev.length > 0 ? prev.slice(0, -1) : prev);
+            setUnderstanding(prev => Math.max(0, prev - Math.round(100 / levelData.sentence.length)));
             setGameState('error');
-            setErrorMessage('Bị vây! Sâu tự cắt ngắn để thoát!');
+            setErrorMessage('Bị vây! Mất 1 từ — ăn lại đi!');
             setCombo(0);
             setShowCombo(false);
             setPenaltyTime(prev => prev + 3); // Phạt 3 giây
@@ -883,13 +886,16 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
           setStuckCount(stuckCountRef.current);
 
           if (stuckCountRef.current >= 8) {
-            // Bị kẹt quá lâu (8 lần liên tiếp không di chuyển được) → giải phóng bằng cách cắt thân
+            // Bị kẹt quá lâu (≥8 lần) → cắt 50% thân + xóa 1 từ cuối (lỗi vận động)
             stuckCountRef.current = 0;
             setStuckCount(0);
             const newLength = Math.max(1, Math.floor(prevSnake.length / 2));
             const cutSnake = prevSnake.slice(0, newLength);
+            // Xóa 1 từ cuối đã thu thập để người chơi phải ăn lại
+            setCollectedWords(prev => prev.length > 0 ? prev.slice(0, -1) : prev);
+            setUnderstanding(prev => Math.max(0, prev - Math.round(100 / levelData.sentence.length)));
             setGameState('error');
-            setErrorMessage('Bị kẹt! Sâu tự cắt ngắn để thoát!');
+            setErrorMessage('Bị kẹt! Mất 1 từ — đổi hướng đi!');
             setCombo(0);
             setShowCombo(false);
             setPenaltyTime(prev => prev + 3);
@@ -1050,10 +1056,14 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
               soundManager.playWrongSound();
             }
 
-            // Level 4: Cut snake length by 50%
+            // Level 4: Cắt 50% thân + xóa collectedWords tương ứng → phải ăn lại
             if (level === 4) {
               const newLength = Math.max(1, Math.floor(prevSnake.length / 2));
               const cutSnake = prevSnake.slice(0, newLength);
+              // Số từ = số đốt thân trừ đầu (head)
+              const newWordCount = Math.max(0, newLength - 1);
+              setCollectedWords(prev => prev.slice(0, newWordCount));
+              setUnderstanding(Math.round((newWordCount / levelData.sentence.length) * 100));
               setTimeout(() => {
                 setGameState('playing');
                 setErrorMessage('');
@@ -1080,9 +1090,12 @@ export function SnakeGame({ level, onLevelComplete, onQuit }: SnakeGameProps) {
             soundManager.playWrongSound();
           }
 
-          // Cut snake length by 50%
+          // Cắt 50% thân + xóa collectedWords tương ứng → phải ăn lại
           const newLength = Math.max(1, Math.floor(prevSnake.length / 2));
           const cutSnake = prevSnake.slice(0, newLength);
+          const newWordCount = Math.max(0, newLength - 1);
+          setCollectedWords(prev => prev.slice(0, newWordCount));
+          setUnderstanding(Math.round((newWordCount / levelData.sentence.length) * 100));
 
           setTimeout(() => {
             setGameState('playing');
